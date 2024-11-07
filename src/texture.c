@@ -18,10 +18,7 @@ void Texture_render(Texture* tex, SDL_Renderer* renderer, int x, int y, SDL_Colo
     SDL_RenderCopy(renderer, tex->texture, NULL, &renderQuad);
 }
 
-void Texture_update(Texture* texture, SDL_Renderer* renderer, TTF_Font* font, char newChar, SDL_Color color) {
-    // Create a string to hold the character, since TTF_RenderText_Solid expects a string
-    char text[2] = {newChar, '\0'};  // A single character plus null terminator
-
+void createTexture(Texture* texture, SDL_Renderer* renderer, TTF_Font* font, char* text, SDL_Color color) {
     // Destroy the previous texture
     if (texture->texture) {
         SDL_DestroyTexture(texture->texture);
@@ -35,4 +32,15 @@ void Texture_update(Texture* texture, SDL_Renderer* renderer, TTF_Font* font, ch
 
     // Free the temporary surface
     SDL_FreeSurface(surface);
+}
+
+void Texture_update(Texture* texture, SDL_Renderer* renderer, TTF_Font* font, char* newChars, SDL_Color color) {
+    if (strlen(newChars) == 1) {
+        // A single character and a null terminator.
+        char text[2] = {newChars[0], '\0'};
+        createTexture(texture, renderer, font, text, color);
+    }
+    else {
+        createTexture(texture, renderer, font, newChars, color);
+    }
 }

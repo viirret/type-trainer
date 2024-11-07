@@ -1,6 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "config.h"
 #include "texture.h"
 #include "window.h"
 #include "word.h"
@@ -9,12 +10,12 @@
 
 #include <stdbool.h>
 
-#define TOTAL_WORDS_PER_GAME 3
-
 typedef struct {
+    Config config;
     Window window;
     TTF_Font* font;
     Word word;
+    int totalWordsPerGame;
     char* sentence;
     Texture* textures;
     SDL_Color* colors;
@@ -27,6 +28,7 @@ typedef struct {
     bool close;
     struct timespec startTime;
     struct timespec endTime;
+    bool shiftPressed;
 } Game;
 
 // Color constants
@@ -41,6 +43,7 @@ void Game_destroy(Game* game);
 void Game_update(Game* game);
 
 void Game_initTextures(Game* game);
+void Game_destroyTextures(Game* game);
 void Game_eventHandler(Game* game);
 void Game_restart(Game* game);
 char* Game_getAccuracy(Game* game);

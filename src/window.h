@@ -3,11 +3,14 @@
 
 #include <SDL2/SDL.h>
 
+#include <stdbool.h>
+
 typedef struct {
     SDL_Window* window;
     SDL_Renderer* renderer;
     int width;
     int height;
+    bool tooSmall;
 } Window;
 
 // Initialization and destruction.

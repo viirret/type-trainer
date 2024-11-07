@@ -1,8 +1,8 @@
 #include "window.h"
 
 int Window_init(Window* window) {
-    window->width = 800;
-    window->height = 600;
+    window->width = 1000;
+    window->height = 1000;
     window->window = SDL_CreateWindow("Typing Trainer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window->width, window->height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     if (!window->window) return -1;
@@ -13,6 +13,7 @@ int Window_init(Window* window) {
         SDL_DestroyWindow(window->window);
         return -1;
     }
+    window->tooSmall = false;
     return 0;
 }
 
@@ -23,8 +24,17 @@ void Window_destroy(Window* window) {
 
 void Window_resize(Window* window, SDL_Event e) {
     if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED) {
-        window->width = e.window.data1;
-        window->height = e.window.data2;
+        int w = e.window.data1;
+        int h = e.window.data2;
+
+        if (w < 400 || h < 800) {
+            window->tooSmall = true;
+        }
+        else {
+            window->tooSmall = false;
+            window->width = e.window.data1;
+            window->height = e.window.data2;
+        }
     }
 }
 
