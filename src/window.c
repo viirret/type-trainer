@@ -40,6 +40,3 @@ void Window_render(Window* win) {
     SDL_RenderPresent(win->renderer);
 }
 
-void Window_fillRect(Window* win, SDL_Rect r) {
-    SDL_RenderFillRect(win->renderer, &r);
-}

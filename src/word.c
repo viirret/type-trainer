@@ -18,35 +18,48 @@ void Word_init(Word* word) {
     int line_count = 0;
     char line[256];
 
-    // First pass: Count lines meeting the length condition
     while (fgets(line, sizeof(line), file)) {
         if (strlen(line) < 10) {
             line_count++;
         }
     }
 
-    // Allocate memory based on counted lines
+    // Allocate memory for lines array based on line_count
     word->lines = malloc(sizeof(char*) * line_count);
     if (!word->lines) {
-        fprintf(stderr, "Memory allocation failed for lines array.\n");
+        fprintf(stderr, "Memory allocation for lines array failed.\n");
         fclose(file);
         return;
     }
 
-    // Rewind and read lines for the second pass
+    // Reset the file pointer to the beginning
+    rewind(file);
+
+    // Second pass: Store lines shorter than 10 characters
+    int index = 0;
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\n")] = '\0';  // Remove newline character
+        // Remove newline character
+        line[strcspn(line, "\n")] = '\0';
 
         if (strlen(line) < 10) {
-            word->lines[word->total_lines] = strdup(line);
-            if (!word->lines[word->total_lines]) {
-                fprintf(stderr, "Memory allocation failed for line copy.\n");
+            if (index >= line_count) {
+                fprintf(stderr, "Index out of bounds: %d\n", index);
                 break;
             }
-            word->total_lines++;
+
+            word->lines[index] = strdup(line);
+            if (!word->lines[index]) {
+                fprintf(stderr, "Memory allocation for line %d failed.\n", index);
+                fclose(file);
+                return;
+            }
+            index++;
         }
     }
-    fclose(file);  // Close the file after reading
+
+    word->total_lines = line_count;
+    printf("Total lines: %d\n", word->total_lines);
+    fclose(file);
 }
 
 void Word_destroy(Word* word) {
@@ -57,17 +70,38 @@ void Word_destroy(Word* word) {
     word->lines = NULL;
 }
 
+int randomLine(int max) {
+    return rand() % max;
+}
+
 char* Word_getSentence(Word* word, int n) {
+    if (word->total_lines == 0) {
+        fprintf(stderr, "No lines available in Word structure.\n");
+        return NULL;
+    }
     static char sentence[512];
     sentence[0] = '\0';
 
-    srand(time(NULL));
+    srand((unsigned) time(NULL));
+
     for (int i = 0; i < n; i++) {
-        int randomIndex = rand() % word->total_lines;
-        strcat(sentence, word->lines[randomIndex]);
+        int random_index = randomLine(word->total_lines);
+        printf("Random index: %d\n", random_index);
+
+        if (word->lines[random_index] == NULL) {
+            fprintf(stderr, "Null line encountered at index %d.\n", random_index);
+            continue;
+        }
+
+        // Concatenate word to sentence
+        strcat(sentence, word->lines[random_index]);
+
+        // Add space if not the last word
         if (i < n - 1) {
             strcat(sentence, " ");
         }
     }
+
+    printf("Sentence: %s\n", sentence);
     return sentence;
 }

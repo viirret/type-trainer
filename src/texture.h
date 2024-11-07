@@ -13,5 +13,6 @@ typedef struct {
 void Texture_init(Texture* texture, SDL_Renderer* renderer, TTF_Font* font, const char* word, SDL_Color color);
 void Texture_destroy(Texture* texture);
 void Texture_render(Texture* texture, SDL_Renderer* renderer, int x, int y, SDL_Color color);
+void Texture_update(Texture* texture, SDL_Renderer* renderer, TTF_Font* font, char newChar, SDL_Color color);
 
 #endif
