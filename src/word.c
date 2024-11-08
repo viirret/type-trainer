@@ -4,12 +4,14 @@
 #include <time.h>
 #include <stdlib.h>
 
-void Word_init(Word* word) {
+void Word_init(Word* word, const char* dictionary_path) {
+    fflush(stdout);
+    printf("Using words from path: %s", dictionary_path);
     word->total_lines = 0;
     word->lines = NULL;
 
     // Open the dictionary file
-    FILE* file = fopen("/usr/share/dict/american-english", "r");
+    FILE* file = fopen(dictionary_path, "r");
     if (!file) {
         fprintf(stderr, "Failed to open dictionary file.\n");
         return;

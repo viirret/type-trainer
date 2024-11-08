@@ -10,7 +10,7 @@ typedef struct {
 } Word;
 
 // Word functions
-void Word_init(Word* word);
+void Word_init(Word* word, const char* dictionary_path);
 void Word_destroy(Word* word);
 char* Word_getSentence(Word* word, int n);
 

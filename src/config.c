@@ -45,47 +45,50 @@ const char* configNameTypeToString(ConfigNameType type) {
         case CONFIG_NAME_TOTAL_WORDS: return "total_words";
         case CONFIG_NAME_BACKGROUND_COLOR: return "background_color";
         case CONFIG_NAME_ADVANCE_ON_FAILURE: return "advance_on_failure";
+        case CONFIG_NAME_DICTIONARY: return "dictionary";
     }
+    return "";
 }
 
 void Config_useDefault(Config* config) {
-    Config_useDefaultForItem(config, config->font);
-    Config_useDefaultForItem(config, config->path_size);
-    Config_useDefaultForItem(config, config->total_words);
-    Config_useDefaultForItem(config, config->background_color);
+    Config_useDefaultForItem(config, &config->font);
+    Config_useDefaultForItem(config, &config->path_size);
+    Config_useDefaultForItem(config, &config->total_words);
+    Config_useDefaultForItem(config, &config->background_color);
+    Config_useDefaultForItem(config, &config->dictionary);
 }
 
-void Config_useDefaultForItem(Config* config, ConfigItem configItem) {
-    switch (configItem.name) {
+void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
+    switch (configItem->name) {
         case CONFIG_NAME_FONT:
-            config->font.name = CONFIG_NAME_FONT;
-            const char* font_path = "/usr/share/fonts/gnu-free/FreeMono.otf";
-            config->font.value.str_value = strdup(font_path);
+            config->font.value.str_value = "/usr/share/fonts/gnu-free/FreeMono.otf";
             config->font.type = CONFIG_TYPE_STRING;
             config->font.is_set = true;
             break;
         case CONFIG_NAME_PATH_SIZE:
-            config->path_size.name = CONFIG_NAME_PATH_SIZE;
             config->path_size.value.int_value = 28;
             config->path_size.type = CONFIG_TYPE_INT;
             config->path_size.is_set = true;
             break;
         case CONFIG_NAME_TOTAL_WORDS:
-            config->total_words.name = CONFIG_NAME_TOTAL_WORDS;
             config->total_words.value.int_value = 30;
             config->total_words.type = CONFIG_TYPE_INT;
             config->total_words.is_set = true;
             break;
         case CONFIG_NAME_BACKGROUND_COLOR:
-            config->background_color.name = CONFIG_NAME_BACKGROUND_COLOR;
             config->background_color.value.color_value = (SDL_Color){0, 255, 0, 255};
             config->background_color.type = CONFIG_TYPE_COLOR;
             config->background_color.is_set = true;
+            break;
         case CONFIG_NAME_ADVANCE_ON_FAILURE:
-            config->advance_on_failure.name = CONFIG_NAME_ADVANCE_ON_FAILURE;
             config->advance_on_failure.value.boolean_value = true;
             config->advance_on_failure.type = CONFIG_TYPE_BOOLEAN;
             config->background_color.is_set = true;
+            break;
+        case CONFIG_NAME_DICTIONARY:
+            config->dictionary.value.str_value = "/usr/share/dict/american-english";
+            config->dictionary.type = CONFIG_TYPE_STRING;
+            config->dictionary.is_set = true;
             break;
     }
 }
@@ -159,6 +162,24 @@ void loadColor(ConfigItem* item, char* key, const char* value) {
 
 // Function to load config values from a file
 int Config_load(Config* config) {
+    config->font.is_set = false;
+    config->font.name = CONFIG_NAME_FONT;
+
+    config->path_size.is_set = false;
+    config->path_size.name = CONFIG_NAME_PATH_SIZE;
+
+    config->total_words.is_set = false;
+    config->total_words.name = CONFIG_NAME_TOTAL_WORDS;
+
+    config->background_color.is_set = false;
+    config->background_color.name = CONFIG_NAME_BACKGROUND_COLOR;
+
+    config->advance_on_failure.is_set = false;
+    config->advance_on_failure.name = CONFIG_NAME_ADVANCE_ON_FAILURE;
+
+    config->dictionary.is_set = false;
+    config->dictionary.name = CONFIG_NAME_DICTIONARY;
+
     FILE* file = NULL;
 
     // Expand `~` in `DEFAULT_CONFIG` to the user's home directory
@@ -186,11 +207,6 @@ int Config_load(Config* config) {
     // Define the sscanf format string as a variable.
     const char* format = "%63[^=]=%127[^\n]";
 
-    config->font.is_set = false;
-    config->path_size.is_set = false;
-    config->total_words.is_set = false;
-    config->background_color.is_set = false;
-
     while (fgets(line, sizeof(line), file)) {
         // Trim newline characters
         line[strcspn(line, "\n")] = 0;
@@ -202,24 +218,22 @@ int Config_load(Config* config) {
             trim(value);
 
             if (strcmp(key, "font") == 0) {
-                config->font.name = CONFIG_NAME_FONT;
                 loadString(&config->font, key, value);
             }
             else if (strcmp(key, "path_size") == 0) {
-                config->path_size.name = CONFIG_NAME_PATH_SIZE;
                 loadInt(&config->path_size, key, value);
             }
             else if (strcmp(key, "total_words") == 0) {
-                config->total_words.name = CONFIG_NAME_TOTAL_WORDS;
                 loadInt(&config->total_words, key, value);
             }
             else if (strcmp(key, "background_color") == 0) {
-                config->background_color.name = CONFIG_NAME_BACKGROUND_COLOR;
                 loadColor(&config->background_color, key, value);
             }
             else if (strcmp(key, "advance_on_failure") == 0) {
-                config->advance_on_failure.name = CONFIG_NAME_ADVANCE_ON_FAILURE;
                 loadBool(&config->advance_on_failure, key, value);
+            }
+            else if (strcmp(key, "dictionary") == 0) {
+                loadString(&config->dictionary, key, value);
             }
             else {
                 printf("Warning: Skipping invalid line: %s\n", line);
@@ -228,25 +242,29 @@ int Config_load(Config* config) {
     }
 
     if (!config->font.is_set) {
-        printf("Config font not set, using default");
-        Config_useDefaultForItem(config, config->font);
+        printf("Config: Font not set, using default\n");
+        Config_useDefaultForItem(config, &config->font);
     }
-
     if (!config->path_size.is_set) {
-        printf("Config path size not set, using default");
-        Config_useDefaultForItem(config, config->path_size);
+        printf("Config: Path size not set, using default\n");
+        Config_useDefaultForItem(config, &config->path_size);
     }
-
     if (!config->total_words.is_set) {
-        printf("Config total words not set, using default");
-        Config_useDefaultForItem(config, config->total_words);
+        printf("Config: Total words not set, using default\n");
+        Config_useDefaultForItem(config, &config->total_words);
     }
-
     if (!config->background_color.is_set) {
-        printf("Config background color not set, using default");
-        Config_useDefaultForItem(config, config->background_color);
+        printf("Config: Background color not set, using default\n");
+        Config_useDefaultForItem(config, &config->background_color);
     }
-
+    if (!config->advance_on_failure.is_set) {
+        printf("Config: Advance on failure not set, using default\n");
+        Config_useDefaultForItem(config, &config->advance_on_failure);
+    }
+    if (!config->dictionary.is_set) {
+        printf("Config: Dictionary not set, using default\n");
+        Config_useDefaultForItem(config, &config->dictionary);
+    }
     fclose(file);
     return 0;
 }

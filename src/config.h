@@ -17,7 +17,8 @@ typedef enum {
     CONFIG_NAME_PATH_SIZE,
     CONFIG_NAME_TOTAL_WORDS,
     CONFIG_NAME_BACKGROUND_COLOR,
-    CONFIG_NAME_ADVANCE_ON_FAILURE
+    CONFIG_NAME_ADVANCE_ON_FAILURE,
+    CONFIG_NAME_DICTIONARY
 } ConfigNameType;
 
 typedef union {
@@ -40,11 +41,12 @@ typedef struct {
     ConfigItem total_words;
     ConfigItem background_color;
     ConfigItem advance_on_failure;
+    ConfigItem dictionary;
 } Config;
 
 int Config_load(Config* config);
 void Config_destroy(Config* config);
 void Config_useDefault(Config* config);
-void Config_useDefaultForItem(Config* config, ConfigItem configItem);
+void Config_useDefaultForItem(Config* config, ConfigItem* configItem);
 
 #endif

@@ -1,7 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude -g `sdl2-config --cflags` -lSDL2 -lSDL2_ttf
-
-# Directories
+CFLAGS = -Wall -Wextra -Iinclude -g -lSDL2 -lSDL2_ttf
 SRC_DIR = src
 BUILD_DIR = build
 
@@ -11,8 +9,6 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRC_FILES))
 
 # Target executable
 TARGET = $(BUILD_DIR)/typing_trainer
-
-# Default target
 all: $(TARGET)
 
 # Rule to create build directory if it doesn't exist
