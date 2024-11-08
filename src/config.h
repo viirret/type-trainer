@@ -6,20 +6,24 @@
 #include <stdbool.h>
 
 typedef enum {
+    CONFIG_NAME_DICTIONARY,
+    CONFIG_NAME_FONT,
+    CONFIG_NAME_PATH_SIZE,
+    CONFIG_NAME_TOTAL_WORDS,
+    CONFIG_NAME_MAX_LINES,
+    CONFIG_NAME_ADVANCE_ON_FAILURE,
+    CONFIG_NAME_COLOR_BACKGROUND,
+    CONFIG_NAME_COLOR_TEXT_DEFAULT,
+    CONFIG_NAME_COLOR_TEXT_ERROR,
+    CONFIG_NAME_COLOR_TEXT_TYPED,
+} ConfigNameType;
+
+typedef enum {
     CONFIG_TYPE_STRING,
     CONFIG_TYPE_INT,
     CONFIG_TYPE_COLOR,
     CONFIG_TYPE_BOOLEAN
 } ConfigValueType;
-
-typedef enum {
-    CONFIG_NAME_FONT,
-    CONFIG_NAME_PATH_SIZE,
-    CONFIG_NAME_TOTAL_WORDS,
-    CONFIG_NAME_BACKGROUND_COLOR,
-    CONFIG_NAME_ADVANCE_ON_FAILURE,
-    CONFIG_NAME_DICTIONARY
-} ConfigNameType;
 
 typedef union {
     char* str_value;
@@ -36,12 +40,16 @@ typedef struct {
 } ConfigItem;
 
 typedef struct {
+    ConfigItem dictionary;
     ConfigItem font;
     ConfigItem path_size;
     ConfigItem total_words;
-    ConfigItem background_color;
+    ConfigItem max_lines;
     ConfigItem advance_on_failure;
-    ConfigItem dictionary;
+    ConfigItem color_background;
+    ConfigItem color_text_default;
+    ConfigItem color_text_error;
+    ConfigItem color_text_typed;
 } Config;
 
 int Config_load(Config* config);

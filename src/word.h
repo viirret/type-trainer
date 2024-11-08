@@ -9,9 +9,13 @@ typedef struct {
     FILE* file;
 } Word;
 
-// Word functions
+// Allocate dictionary context.
 void Word_init(Word* word, const char* dictionary_path);
+
+// Deallocate dictionary context.
 void Word_destroy(Word* word);
+
+// Get random sentence from the dictionary file.
 char* Word_getSentence(Word* word, int n);
 
 #endif

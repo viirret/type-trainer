@@ -1,15 +1,11 @@
 #include "game.h"
-#include "config.h"
-#include "texture.h"
-#include "word.h"
 
 #include <time.h>
 
-const SDL_Color COLOR_BLACK = {0, 0, 0, 255};
-const SDL_Color COLOR_WHITE = {255, 255, 255, 255};
-const SDL_Color COLOR_ERROR = {255, 0, 0, 255};
-
 void initTextures(Game* game) {
+    if (!game->config.total_words.is_set) {
+        perror("Cannot continue");
+    }
     game->sentence = strdup(Word_getSentence(&game->word, game->config.total_words.value.int_value));
     game->textures = malloc(sizeof(Texture) * strlen(game->sentence));
     game->colors = malloc(sizeof(int) * strlen(game->sentence));
@@ -23,8 +19,8 @@ void initTextures(Game* game) {
     int i = 0;
     for (const char *p = game->sentence; *p != '\0'; p++) {
         char letter[2] = {*p, '\0'};
-        Texture_init(&game->textures[i], game->window.renderer, game->font, letter, COLOR_WHITE);
-        game->colors[i] = COLOR_WHITE;
+        Texture_init(&game->textures[i], game->window.renderer, game->font, letter, game->config.color_text_default.value.color_value);
+        game->colors[i] = game->config.color_text_default.value.color_value;
         i++;
     }
 }
@@ -40,14 +36,14 @@ void endGame(Game* game) {
 void Game_init(Game* game) {
     Config_load(&game->config);
     Window_init(&game->window);
+    Word_init(&game->word, game->config.dictionary.value.str_value);
     game->font = TTF_OpenFont(game->config.font.value.str_value, game->config.path_size.value.int_value);
     if (!game->font) {
         SDL_Log("Failed to load the font! SDL_ttf Error: %s\n", TTF_GetError());
         return;
     }
-    Word_init(&game->word, game->config.dictionary.value.str_value);
-    Texture_init(&game->accuracyTexture, game->window.renderer, game->font, "Accuracy", COLOR_WHITE);
-    Texture_init(&game->speedTexture, game->window.renderer, game->font, "Speed", COLOR_WHITE);
+    Texture_init(&game->metrics_textures.accuracyTexture, game->window.renderer, game->font, "Accuracy", game->config.color_text_default.value.color_value);
+    Texture_init(&game->metrics_textures.speedTexture, game->window.renderer, game->font, "Speed", game->config.color_text_default.value.color_value);
 }
 
 void destroyTextures(Game* game) {
@@ -64,8 +60,8 @@ void Game_destroy(Game* game) {
 
     destroyTextures(game);
 
-    Texture_destroy(&game->accuracyTexture);
-    Texture_destroy(&game->speedTexture);
+    Texture_destroy(&game->metrics_textures.accuracyTexture);
+    Texture_destroy(&game->metrics_textures.speedTexture);
 
     Window_destroy(&game->window);
     TTF_CloseFont(game->font);
@@ -74,7 +70,7 @@ void Game_destroy(Game* game) {
 void renderText(Game* game) {
     size_t sentenceLen = strlen(game->sentence);
     int xpadding = 100;
-    int ypadding = 400;
+    int ypadding = xpadding * 4;
     int maxLineWidth = game->window.width - xpadding * 2;
 
     int currentX = xpadding;
@@ -107,12 +103,16 @@ void renderText(Game* game) {
 void renderMetrics(Game* game) {
     int w = game->window.width;
     int h = game->window.height;
-    Texture_render(&game->accuracyTexture, game->window.renderer, w / 10, h / 10, COLOR_WHITE);
-    Texture_render(&game->speedTexture, game->window.renderer, w - w / 4, h / 10, COLOR_WHITE);
+    int offset_x = w / 10;
+    int offset_y = h / 10;
+    SDL_Color text_color = game->config.color_text_default.value.color_value;
+
+    Texture_render(&game->metrics_textures.speedTexture, game->window.renderer, offset_x, offset_y, text_color);
+    Texture_render(&game->metrics_textures.accuracyTexture, game->window.renderer, w - offset_x - game->metrics_textures.speedTexture.width, offset_y, text_color);
 }
 
 void render(Game* game) {
-    Window_setColor(&game->window, game->config.background_color.value.color_value);
+    Window_setColor(&game->window, game->config.color_background.value.color_value);
     Window_clear(&game->window);
 
     if (!game->window.tooSmall) {
@@ -125,6 +125,57 @@ void render(Game* game) {
 void restart(Game* game) {
     endGame(game);
     Game_setup(game);
+}
+
+double gameDuration(Game* game) {
+    return (double)(game->endTime.tv_sec - game->startTime.tv_sec) +
+        (double)(game->endTime.tv_nsec - game->startTime.tv_nsec) / 1e9;
+}
+
+char* getAccuracy(Game* game) {
+    static char accuracy[22];
+    double acc = game->failures > 0 ? (1 - (double)game->failures / (double)game->lastLetter) * 100 : 100;
+    snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", acc);
+    return accuracy;
+}
+
+char* getSpeed(Game* game) {
+    static char speed[20];
+    double duration = gameDuration(game);
+    if (duration > 0) {
+        double wpm = game->config.total_words.value.int_value / (duration / 60.0);
+        snprintf(speed, sizeof(speed), "Last speed: %.2f", wpm);
+    } else {
+        snprintf(speed, sizeof(speed), "No record of speed");
+    }
+    return speed;
+}
+
+void updateWrittenKey(Game* game, char expected_char, bool isCorrect) {
+    char* underscore = {"_"};
+    SDL_Color color = isCorrect ? game->config.color_text_typed.value.color_value :
+                                  game->config.color_text_error.value.color_value;
+    // Convert spaces to underscore.
+    if (expected_char == 32) {
+        Texture_update(&game->textures[game->checkIndex], game->window.renderer, game->font, underscore, color);
+    }
+    if (isCorrect) {
+        game->colors[game->checkIndex] = color;
+        game->checkIndex++;
+    }
+    else {
+        game->colors[game->checkIndex] = color;
+        if (game->config.advance_on_failure.value.boolean_value) {
+            game->checkIndex++;
+        }
+        game->failures++;
+    }
+    if (game->shiftPressed) {
+        game->shiftPressed = false;
+    }
+    if (game->checkIndex >= game->lastLetter) {
+        restart(game);
+    }
 }
 
 void eventHandler(Game* game) {
@@ -152,50 +203,20 @@ void eventHandler(Game* game) {
                 continue;
             }
 
-            char expectedChar = game->sentence[game->checkIndex];
-            char* underscore = {"_"};
-
-            bool correct = (game->shiftPressed && toupper(key) == expectedChar) ||
-                           (!game->shiftPressed && key == expectedChar);
+            char expected_char = game->sentence[game->checkIndex];
+            bool correct = (game->shiftPressed && toupper(key) == expected_char) ||
+                           (!game->shiftPressed && key == expected_char);
 
             if (correct) {
-                printf("Correct! Input: %c, expected char: %c\n", key, expectedChar);
-
-                // Convert spaces to underscore.
-                if (expectedChar == 32) {
-                    Texture_update(&game->textures[game->checkIndex], game->window.renderer, game->font, underscore, COLOR_BLACK);
-                }
-                game->colors[game->checkIndex] = COLOR_BLACK;
-                game->checkIndex++;
-
-                if (game->shiftPressed) {
-                    game->shiftPressed = false;
-                }
-
-                if (game->checkIndex >= game->lastLetter) {
-                    restart(game);
-                }
+                printf("Correct! Input: %c, expected char: %c\n", key, expected_char);
+                updateWrittenKey(game, expected_char, correct);
             }
             else {
-                printf("Incorrect! Input char: %c, expected char: %c \n", key, expectedChar);
-                if (expectedChar == 32) {
-                    Texture_update(&game->textures[game->checkIndex], game->window.renderer, game->font, underscore, COLOR_ERROR);
-                }
-                game->colors[game->checkIndex] = COLOR_ERROR;
-                game->failures++;
-                // Move on failure if config says so.
-                if (game->config.advance_on_failure.value.boolean_value) {
-                    game->checkIndex++;
-                }
-
-                if (game->shiftPressed) {
-                    game->shiftPressed = false;
-                }
-
-                if (game->checkIndex >= game->lastLetter) {
-                    restart(game);
-                }
+                printf("Incorrect! Input char: %c, expected char: %c \n", key, expected_char);
+                updateWrittenKey(game, expected_char, correct);
             }
+            Texture_update(&game->metrics_textures.accuracyTexture, game->window.renderer, game->font, getAccuracy(game), game->config.color_text_default.value.color_value);
+            Texture_update(&game->metrics_textures.speedTexture, game->window.renderer, game->font, getSpeed(game), game->config.color_text_default.value.color_value);
         }
     }
 }
@@ -205,44 +226,8 @@ void Game_update(Game* game) {
     render(game);
 }
 
-char* getAccuracy(Game* game) {
-    printf("Failures in accuracy: %d\n", game->failures);
-    static char accuracy[22];
-
-    // Check if there is anything to count
-    if (game->lastLetter == 0) {
-        snprintf(accuracy, sizeof(accuracy), "No record of accuracy");
-    } else {
-        // Calculate accuracy percentage
-        double acc = game->failures > 0 ? (1 - (double)game->failures / (double)game->lastLetter) * 100 : 100;
-        snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", acc);
-    }
-    return accuracy;
-}
-
-char* getSpeed(Game* game) {
-    static char speed[20];
-
-    if (game->endTime.tv_sec < 0) {
-        snprintf(speed, sizeof(speed), "No last speed");
-    }
-
-    // Calculate the difference in seconds and nanoseconds
-    double seconds = (double)(game->endTime.tv_sec - game->startTime.tv_sec) +
-                     (double)(game->endTime.tv_nsec - game->startTime.tv_nsec) / 1e9;
-    if (seconds > 0) {
-        double wpm = game->config.total_words.value.int_value / (seconds / 60.0);
-        snprintf(speed, sizeof(speed), "Last speed: %.2f", wpm);
-    } else {
-        snprintf(speed, sizeof(speed), "No record of speed");
-    }
-    return speed;
-}
-
 void Game_setup(Game* game) {
     initTextures(game);
-    Texture_update(&game->accuracyTexture, game->window.renderer, game->font, getAccuracy(game), COLOR_WHITE);
-    Texture_update(&game->speedTexture, game->window.renderer, game->font, getSpeed(game), COLOR_WHITE);
     game->checkIndex = 0;
     game->failures = 0;
     game->lastLetter = strlen(game->sentence);
@@ -250,5 +235,4 @@ void Game_setup(Game* game) {
     game->shiftPressed = false;
     startGame(game);
 }
-
 

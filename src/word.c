@@ -4,9 +4,19 @@
 #include <time.h>
 #include <stdlib.h>
 
+int containsNonAscii(const char* word) {
+    while (*word) {
+        if ((unsigned char)(*word) > 127) {
+            return 1;
+        }
+        word++;
+    }
+    return 0;
+}
+
 void Word_init(Word* word, const char* dictionary_path) {
     fflush(stdout);
-    printf("Using words from path: %s", dictionary_path);
+    printf("Using words from path: %s\n", dictionary_path);
     word->total_lines = 0;
     word->lines = NULL;
 
@@ -86,12 +96,16 @@ char* Word_getSentence(Word* word, int n) {
 
     srand((unsigned) time(NULL));
 
-    for (int i = 0; i < n; i++) {
+    int word_count = 0;
+    while (word_count < n) {
         int random_index = randomLine(word->total_lines);
-        printf("Random index: %d\n", random_index);
-
         if (word->lines[random_index] == NULL) {
             fprintf(stderr, "Null line encountered at index %d.\n", random_index);
+            continue;
+        }
+
+        // Skip non-ASCII words
+        if (containsNonAscii(word->lines[random_index])) {
             continue;
         }
 
@@ -99,9 +113,10 @@ char* Word_getSentence(Word* word, int n) {
         strcat(sentence, word->lines[random_index]);
 
         // Add space if not the last word
-        if (i < n - 1) {
+        if (word_count < n - 1) {
             strcat(sentence, " ");
         }
+        word_count++;
     }
 
     printf("Sentence: %s\n", sentence);

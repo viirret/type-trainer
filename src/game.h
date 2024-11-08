@@ -11,29 +11,46 @@
 #include <stdbool.h>
 
 typedef struct {
-    Config config;
-    Window window;
-    TTF_Font* font;
-    Word word;
     Texture accuracyTexture;
     Texture speedTexture;
+} MetricsTextures;
+
+typedef struct {
+    // Game config.
+    Config config;
+
+    // Window and SDL context.
+    Window window;
+
+    // Dictionary file used for words.
+    Word word;
+
+    // Program font.
+    TTF_Font* font;
+
+    // Textures for displaying metrics data.
+    MetricsTextures metrics_textures;
+
+    // The writable text.
     char* sentence;
     Texture* textures;
     SDL_Color* colors;
 
+    // Game logic variables.
     int checkIndex;
     int failures;
     int lastLetter;
-    bool close;
+
+    // Time measurement.
     struct timespec startTime;
     struct timespec endTime;
-    bool shiftPressed;
-} Game;
 
-// Color constants
-extern const SDL_Color COLOR_BLACK;
-extern const SDL_Color COLOR_WHITE;
-extern const SDL_Color COLOR_ERROR;
+    // Is the shift-key pressed for capital letters.
+    bool shiftPressed;
+
+    // The application should close.
+    bool close;
+} Game;
 
 // Allocate for game.
 void Game_init(Game* game);
