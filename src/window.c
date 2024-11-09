@@ -8,8 +8,7 @@ int Window_init(Window* window) {
     if (!window->window) return -1;
 
     window->renderer = SDL_CreateRenderer(window->window, -1, SDL_RENDERER_ACCELERATED);
-    if (!window->renderer)
-    {
+    if (!window->renderer) {
         SDL_DestroyWindow(window->window);
         return -1;
     }

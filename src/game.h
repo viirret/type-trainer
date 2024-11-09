@@ -5,15 +5,27 @@
 #include "texture.h"
 #include "window.h"
 #include "word.h"
+#include "game_metrics.h"
+
+#include <time.h>
 
 #include <SDL2/SDL_ttf.h>
-
-#include <stdbool.h>
 
 typedef struct {
     Texture accuracyTexture;
     Texture speedTexture;
 } MetricsTextures;
+
+typedef struct {
+    int failures;
+    int lastLetter;
+} Accuracy;
+
+typedef struct {
+    MetricsTextures textures;
+    GameMetrics metrics;
+    Accuracy accuracy;
+} Metrics;
 
 typedef struct {
     // Game config.
@@ -28,18 +40,16 @@ typedef struct {
     // Program font.
     TTF_Font* font;
 
-    // Textures for displaying metrics data.
-    MetricsTextures metrics_textures;
+    // Metrics data
+    Metrics metrics;
 
     // The writable text.
     char* sentence;
     Texture* textures;
     SDL_Color* colors;
 
-    // Game logic variables.
+    // Index the game is currently writing next.
     int checkIndex;
-    int failures;
-    int lastLetter;
 
     // Time measurement.
     struct timespec startTime;

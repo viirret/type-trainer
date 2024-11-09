@@ -1,6 +1,5 @@
 #include "game.h"
-
-#include <time.h>
+#include "config_file.h"
 
 void initTextures(Game* game) {
     if (!game->config.total_words.is_set) {
@@ -42,8 +41,36 @@ void Game_init(Game* game) {
         SDL_Log("Failed to load the font! SDL_ttf Error: %s\n", TTF_GetError());
         return;
     }
-    Texture_init(&game->metrics_textures.accuracyTexture, game->window.renderer, game->font, "Accuracy", game->config.color_text_default.value.color_value);
-    Texture_init(&game->metrics_textures.speedTexture, game->window.renderer, game->font, "Speed", game->config.color_text_default.value.color_value);
+
+    if (ConfigFileExists(CONFIG_FILE_ACCURACY)) {
+        if (ConfigFileEmpty(CONFIG_FILE_ACCURACY)) {
+            ConfigFileWriteInt(CONFIG_FILE_ACCURACY, 0);
+        }
+    }
+    else {
+        ConfigFileInit(CONFIG_FILE_ACCURACY);
+        ConfigFileWriteInt(CONFIG_FILE_ACCURACY, 0);
+    }
+    if (ConfigFileExists(CONFIG_FILE_SPEED)) {
+        if (ConfigFileEmpty(CONFIG_FILE_SPEED)) {
+            ConfigFileWriteInt(CONFIG_FILE_SPEED, 0);
+        }
+    }
+    else {
+        ConfigFileInit(CONFIG_FILE_SPEED);
+        ConfigFileWriteInt(CONFIG_FILE_SPEED, 0);
+    }
+
+    GameMetrics_init(&game->metrics.metrics);
+    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_ACCURACY));
+    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_SPEED));
+
+    char accuracy[50];
+    char speed[50];
+    snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", GameMetrics_getAverageAccuracy(&game->metrics.metrics));
+    snprintf(speed, sizeof(speed), "Last speed: %.2f", GameMetrics_getAverageSpeed(&game->metrics.metrics));
+    Texture_init(&game->metrics.textures.accuracyTexture, game->window.renderer, game->font, accuracy, game->config.color_text_default.value.color_value);
+    Texture_init(&game->metrics.textures.speedTexture, game->window.renderer, game->font, speed, game->config.color_text_default.value.color_value);
 }
 
 void destroyTextures(Game* game) {
@@ -60,8 +87,8 @@ void Game_destroy(Game* game) {
 
     destroyTextures(game);
 
-    Texture_destroy(&game->metrics_textures.accuracyTexture);
-    Texture_destroy(&game->metrics_textures.speedTexture);
+    Texture_destroy(&game->metrics.textures.accuracyTexture);
+    Texture_destroy(&game->metrics.textures.speedTexture);
 
     Window_destroy(&game->window);
     TTF_CloseFont(game->font);
@@ -107,8 +134,8 @@ void renderMetrics(Game* game) {
     int offset_y = h / 10;
     SDL_Color text_color = game->config.color_text_default.value.color_value;
 
-    Texture_render(&game->metrics_textures.speedTexture, game->window.renderer, offset_x, offset_y, text_color);
-    Texture_render(&game->metrics_textures.accuracyTexture, game->window.renderer, w - offset_x - game->metrics_textures.speedTexture.width, offset_y, text_color);
+    Texture_render(&game->metrics.textures.speedTexture, game->window.renderer, offset_x, offset_y, text_color);
+    Texture_render(&game->metrics.textures.accuracyTexture, game->window.renderer, w - offset_x - game->metrics.textures.speedTexture.width, offset_y, text_color);
 }
 
 void render(Game* game) {
@@ -122,33 +149,31 @@ void render(Game* game) {
     Window_render(&game->window);
 }
 
-void restart(Game* game) {
-    endGame(game);
-    Game_setup(game);
-}
-
 double gameDuration(Game* game) {
     return (double)(game->endTime.tv_sec - game->startTime.tv_sec) +
         (double)(game->endTime.tv_nsec - game->startTime.tv_nsec) / 1e9;
 }
 
-char* getAccuracy(Game* game) {
-    static char accuracy[22];
-    double acc = game->failures > 0 ? (1 - (double)game->failures / (double)game->lastLetter) * 100 : 100;
-    snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", acc);
-    return accuracy;
+double gameWpm(Game* game, double duration) {
+    return game->config.total_words.value.int_value / (duration / 60.0);
 }
 
-char* getSpeed(Game* game) {
-    static char speed[20];
-    double duration = gameDuration(game);
-    if (duration > 0) {
-        double wpm = game->config.total_words.value.int_value / (duration / 60.0);
-        snprintf(speed, sizeof(speed), "Last speed: %.2f", wpm);
-    } else {
-        snprintf(speed, sizeof(speed), "No record of speed");
-    }
-    return speed;
+double gameAccuracy(Game* game) {
+    return game->metrics.accuracy.failures > 0 ? (1 - (double)game->metrics.accuracy.failures / (double)game->metrics.accuracy.lastLetter) * 100 : 100;
+}
+
+void restart(Game* game) {
+    endGame(game);
+    fflush(stdout);
+    printf("Game over!\n");
+    double game_duration = gameDuration(game);
+    double game_wpm = gameWpm(game, game_duration);
+    double game_accuracy = gameAccuracy(game);
+
+    ConfigFileWriteInt(CONFIG_FILE_ACCURACY, game_accuracy);
+    ConfigFileWriteInt(CONFIG_FILE_SPEED, game_wpm);
+
+    Game_setup(game);
 }
 
 void updateWrittenKey(Game* game, char expected_char, bool isCorrect) {
@@ -168,14 +193,27 @@ void updateWrittenKey(Game* game, char expected_char, bool isCorrect) {
         if (game->config.advance_on_failure.value.boolean_value) {
             game->checkIndex++;
         }
-        game->failures++;
+        game->metrics.accuracy.failures++;
     }
     if (game->shiftPressed) {
         game->shiftPressed = false;
     }
-    if (game->checkIndex >= game->lastLetter) {
+    if (game->checkIndex >= game->metrics.accuracy.lastLetter) {
         restart(game);
     }
+}
+
+void updateMetricsTextures(Game* game) {
+    char accuracy[50];
+    char speed[50];
+
+    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_ACCURACY));
+    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_SPEED));
+
+    snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", GameMetrics_getAverageAccuracy(&game->metrics.metrics));
+    snprintf(speed, sizeof(speed), "Last speed: %.2f", GameMetrics_getAverageSpeed(&game->metrics.metrics));
+    Texture_update(&game->metrics.textures.accuracyTexture, game->window.renderer, game->font, accuracy, game->config.color_text_default.value.color_value);
+    Texture_update(&game->metrics.textures.speedTexture, game->window.renderer, game->font, speed, game->config.color_text_default.value.color_value);
 }
 
 void eventHandler(Game* game) {
@@ -198,7 +236,7 @@ void eventHandler(Game* game) {
                 printf("Left Super key (LGUI) pressed\n");
                 continue;
             }
-            if (key== SDLK_RGUI) {
+            if (key == SDLK_RGUI) {
                 printf("Right Super key (RGUI) pressed\n");
                 continue;
             }
@@ -215,8 +253,6 @@ void eventHandler(Game* game) {
                 printf("Incorrect! Input char: %c, expected char: %c \n", key, expected_char);
                 updateWrittenKey(game, expected_char, correct);
             }
-            Texture_update(&game->metrics_textures.accuracyTexture, game->window.renderer, game->font, getAccuracy(game), game->config.color_text_default.value.color_value);
-            Texture_update(&game->metrics_textures.speedTexture, game->window.renderer, game->font, getSpeed(game), game->config.color_text_default.value.color_value);
         }
     }
 }
@@ -228,9 +264,11 @@ void Game_update(Game* game) {
 
 void Game_setup(Game* game) {
     initTextures(game);
+
+    updateMetricsTextures(game);
     game->checkIndex = 0;
-    game->failures = 0;
-    game->lastLetter = strlen(game->sentence);
+    game->metrics.accuracy.failures = 0;
+    game->metrics.accuracy.lastLetter = strlen(game->sentence);
     game->close = false;
     game->shiftPressed = false;
     startGame(game);

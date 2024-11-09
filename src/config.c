@@ -1,11 +1,6 @@
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
-#define DEFAULT_CONFIG "/.config/type-trainer/config.txt"
+#include "config_file.h"
 
 void modifyItemString(ConfigItem* item, const char* value) {
     item->value.str_value = malloc(strlen(value) + 1);
@@ -229,13 +224,17 @@ void loadColor(ConfigItem* item, char* key, const char* value) {
             item->is_set = true;
         }
         else {
-            printf("Invalid format for background color. Expected format: R,G,B,A\n");
+            printf("Invalid format for color. Expected format: R,G,B,A\n");
         }
     }
 }
 
 // Function to load config values from a file
 int Config_load(Config* config) {
+    if (!ConfigFileInit(CONFIG_FILE_DEFAULT)) {
+        return -1;
+    }
+
     config->dictionary.is_set = false;
     config->dictionary.name = CONFIG_NAME_DICTIONARY;
 
@@ -268,12 +267,9 @@ int Config_load(Config* config) {
 
     FILE* file = NULL;
 
-    // Expand `~` in `DEFAULT_CONFIG` to the user's home directory
-    char homeConfigPath[256];
-    const char* home = getenv("HOME");
-    if (home) {
-        snprintf(homeConfigPath, sizeof(homeConfigPath), "%s%s", home, DEFAULT_CONFIG);
-        file = fopen(homeConfigPath, "r");
+    const char* configPath = ConfigFileResolve(CONFIG_FILE_DEFAULT);
+    if (configPath) {
+        file = fopen(configPath, "r");
     }
 
     if (!file) {
