@@ -37,7 +37,6 @@ const char* configNameTypeToString(ConfigNameType type) {
         case CONFIG_NAME_DICTIONARY: return "dictionary";
         case CONFIG_NAME_FONT: return "font";
         case CONFIG_NAME_PATH_SIZE: return "path_size";
-        case CONFIG_NAME_MAX_LINES: return "max_lines";
         case CONFIG_NAME_TOTAL_WORDS: return "total_words";
         case CONFIG_NAME_ADVANCE_ON_FAILURE: return "advance_on_failure";
         case CONFIG_NAME_COLOR_BACKGROUND: return "color_background";
@@ -53,7 +52,6 @@ void Config_useDefault(Config* config) {
     Config_useDefaultForItem(config, &config->font);
     Config_useDefaultForItem(config, &config->path_size);
     Config_useDefaultForItem(config, &config->total_words);
-    Config_useDefaultForItem(config, &config->max_lines);
     Config_useDefaultForItem(config, &config->advance_on_failure);
     Config_useDefaultForItem(config, &config->color_background);
     Config_useDefaultForItem(config, &config->color_text_default);
@@ -82,11 +80,6 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
             config->total_words.value.int_value = 30;
             config->total_words.type = CONFIG_TYPE_INT;
             config->total_words.is_set = true;
-            break;
-        case CONFIG_NAME_MAX_LINES:
-            config->max_lines.value.int_value = 5;
-            config->max_lines.type = CONFIG_TYPE_INT;
-            config->max_lines.is_set = true;
             break;
         case CONFIG_NAME_ADVANCE_ON_FAILURE:
             config->advance_on_failure.value.boolean_value = true;
@@ -247,9 +240,6 @@ int Config_load(Config* config) {
     config->total_words.is_set = false;
     config->total_words.name = CONFIG_NAME_TOTAL_WORDS;
 
-    config->max_lines.is_set = false;
-    config->max_lines.name = CONFIG_NAME_MAX_LINES;
-
     config->advance_on_failure.is_set = false;
     config->advance_on_failure.name = CONFIG_NAME_ADVANCE_ON_FAILURE;
 
@@ -306,9 +296,6 @@ int Config_load(Config* config) {
             else if (strcmp(key, "total_words") == 0) {
                 loadInt(&config->total_words, key, value);
             }
-            else if (strcmp(key, "max_lines") == 0) {
-                loadInt(&config->max_lines, key, value);
-            }
             else if (strcmp(key, "advance_on_failure") == 0) {
                 loadBool(&config->advance_on_failure, key, value);
             }
@@ -345,10 +332,6 @@ int Config_load(Config* config) {
     if (!config->total_words.is_set) {
         printf("Config: Total words not set, using default\n");
         Config_useDefaultForItem(config, &config->total_words);
-    }
-    if (!config->max_lines.is_set) {
-        printf("Config: Max lines not set, using default\n");
-        Config_useDefaultForItem(config, &config->max_lines);
     }
     if (!config->advance_on_failure.is_set) {
         printf("Config: Advance on failure not set, using default\n");

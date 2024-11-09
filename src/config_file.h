@@ -4,8 +4,8 @@
 #include <stdbool.h>
 
 #define CONFIG_FILE_DEFAULT  "/.config/type-trainer/config.txt"
-#define CONFIG_FILE_ACCURACY "/.config/type-trainer/accuracy"
-#define CONFIG_FILE_SPEED    "/.config/type-trainer/speed"
+#define CONFIG_DATA_FILE_ACCURACY "/.config/type-trainer/accuracy"
+#define CONFIG_DATA_FILE_SPEED    "/.config/type-trainer/speed"
 
 bool ConfigFileInit(const char* file_name);
 bool ConfigFileExists(const char* file_name);

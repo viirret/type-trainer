@@ -42,28 +42,28 @@ void Game_init(Game* game) {
         return;
     }
 
-    if (ConfigFileExists(CONFIG_FILE_ACCURACY)) {
-        if (ConfigFileEmpty(CONFIG_FILE_ACCURACY)) {
-            ConfigFileWriteInt(CONFIG_FILE_ACCURACY, 0);
+    if (ConfigFileExists(CONFIG_DATA_FILE_ACCURACY)) {
+        if (ConfigFileEmpty(CONFIG_DATA_FILE_ACCURACY)) {
+            ConfigFileWriteInt(CONFIG_DATA_FILE_ACCURACY, 0);
         }
     }
     else {
-        ConfigFileInit(CONFIG_FILE_ACCURACY);
-        ConfigFileWriteInt(CONFIG_FILE_ACCURACY, 0);
+        ConfigFileInit(CONFIG_DATA_FILE_ACCURACY);
+        ConfigFileWriteInt(CONFIG_DATA_FILE_ACCURACY, 0);
     }
-    if (ConfigFileExists(CONFIG_FILE_SPEED)) {
-        if (ConfigFileEmpty(CONFIG_FILE_SPEED)) {
-            ConfigFileWriteInt(CONFIG_FILE_SPEED, 0);
+    if (ConfigFileExists(CONFIG_DATA_FILE_SPEED)) {
+        if (ConfigFileEmpty(CONFIG_DATA_FILE_SPEED)) {
+            ConfigFileWriteInt(CONFIG_DATA_FILE_SPEED, 0);
         }
     }
     else {
-        ConfigFileInit(CONFIG_FILE_SPEED);
-        ConfigFileWriteInt(CONFIG_FILE_SPEED, 0);
+        ConfigFileInit(CONFIG_DATA_FILE_SPEED);
+        ConfigFileWriteInt(CONFIG_DATA_FILE_SPEED, 0);
     }
 
     GameMetrics_init(&game->metrics.metrics);
-    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_ACCURACY));
-    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_SPEED));
+    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
+    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
 
     char accuracy[50];
     char speed[50];
@@ -112,11 +112,6 @@ void renderText(Game* game) {
             currentX = xpadding;
             lineIndex++;
             currentY = ypadding + lineIndex * xpadding;
-
-            // Limit to three lines
-            if (lineIndex > 5) {
-                break;
-            }
         }
 
         // Render the texture at the current position
@@ -170,8 +165,8 @@ void restart(Game* game) {
     double game_wpm = gameWpm(game, game_duration);
     double game_accuracy = gameAccuracy(game);
 
-    ConfigFileWriteInt(CONFIG_FILE_ACCURACY, game_accuracy);
-    ConfigFileWriteInt(CONFIG_FILE_SPEED, game_wpm);
+    ConfigFileWriteInt(CONFIG_DATA_FILE_ACCURACY, game_accuracy);
+    ConfigFileWriteInt(CONFIG_DATA_FILE_SPEED, game_wpm);
 
     Game_setup(game);
 }
@@ -207,8 +202,8 @@ void updateMetricsTextures(Game* game) {
     char accuracy[50];
     char speed[50];
 
-    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_ACCURACY));
-    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_FILE_SPEED));
+    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
+    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
 
     snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", GameMetrics_getAverageAccuracy(&game->metrics.metrics));
     snprintf(speed, sizeof(speed), "Last speed: %.2f", GameMetrics_getAverageSpeed(&game->metrics.metrics));
@@ -221,9 +216,13 @@ void eventHandler(Game* game) {
     while (SDL_PollEvent(&e)) {
         Window_resize(&game->window, e);
 
-        if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && ((e.key.keysym.sym == SDLK_ESCAPE) || (e.key.keysym.sym == SDLK_ESCAPE)))) {
+        if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && (e.key.keysym.sym == SDLK_ESCAPE))) {
             game->close = true;
+            Game_destroy(game);
+            exit(0);
+            return;
         }
+
         else if (e.type == SDL_KEYDOWN) {
             fflush(stdout);
 

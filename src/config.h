@@ -10,7 +10,6 @@ typedef enum {
     CONFIG_NAME_FONT,
     CONFIG_NAME_PATH_SIZE,
     CONFIG_NAME_TOTAL_WORDS,
-    CONFIG_NAME_MAX_LINES,
     CONFIG_NAME_ADVANCE_ON_FAILURE,
     CONFIG_NAME_COLOR_BACKGROUND,
     CONFIG_NAME_COLOR_TEXT_DEFAULT,
@@ -44,7 +43,6 @@ typedef struct {
     ConfigItem font;
     ConfigItem path_size;
     ConfigItem total_words;
-    ConfigItem max_lines;
     ConfigItem advance_on_failure;
     ConfigItem color_background;
     ConfigItem color_text_default;
