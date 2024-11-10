@@ -1,9 +1,77 @@
 #include "config_file.h"
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <libgen.h>
+
+// Helper function to create directories if they do not exist
+bool create_directory(const char* path) {
+    struct stat st;
+    if (stat(path, &st) == -1) {
+        if (mkdir(path, 0755) == -1 && errno != EEXIST) {
+            perror("Failed to create directory");
+            return false;
+        }
+    }
+    return true;
+}
+
+bool createConfigFiles() {
+    const char* home = getenv("HOME");
+    if (!home) {
+        fprintf(stderr, "Error: HOME environment variable is not set.\n");
+        return false;
+    }
+
+    // Define file paths
+    const char* config_dir = "/.config/type-trainer";
+    const char* data_dir = "/.local/share/type-trainer";
+    char config_file[512], speed_file[512], accuracy_file[512];
+
+    // Construct full file paths
+    snprintf(config_file, sizeof(config_file), "%s%s/config.txt", home, config_dir);
+    snprintf(speed_file, sizeof(speed_file), "%s%s/speed", home, data_dir);
+    snprintf(accuracy_file, sizeof(accuracy_file), "%s%s/accuracy", home, data_dir);
+
+    // Create necessary directories
+    char full_config_dir[512], full_data_dir[512];
+    snprintf(full_config_dir, sizeof(full_config_dir), "%s%s", home, config_dir);
+    snprintf(full_data_dir, sizeof(full_data_dir), "%s%s", home, data_dir);
+
+    if (!create_directory(full_config_dir) || !create_directory(full_data_dir)) {
+        return false;
+    }
+
+    // Create or open each file
+    FILE* c_file = fopen(config_file, "a");
+    if (!c_file) {
+        perror("Failed to create config file");
+        return false;
+    }
+    fclose(c_file);
+
+    FILE* s_file = fopen(speed_file, "a");
+    if (!s_file) {
+        perror("Failed to create speed file");
+        return false;
+    }
+    fclose(s_file);
+    ConfigFileWriteInt(speed_file, 0);
+
+    FILE* a_file = fopen(accuracy_file, "a");
+    if (!a_file) {
+        perror("Failed to create accuracy file");
+        return false;
+    }
+    fclose(a_file);
+    ConfigFileWriteInt(accuracy_file, 0);
+
+    return true;
+}
+
 
 bool ConfigFileExists(const char* file_name) {
     const char* file_path = ConfigFileResolve(file_name);
@@ -96,7 +164,7 @@ const char* ConfigFileResolve(const char* config_file) {
         }
         else if (home) {
             // Fallback to HOME/.config if XDG_CONFIG_HOME is not set
-            snprintf(config_path, sizeof(config_path), "%s%s", home, config_file);
+            snprintf(config_path, sizeof(config_path), "%s/.config/%s", home, config_file);
         } else {
             fprintf(stderr, "Error: Neither XDG_CONFIG_HOME nor HOME is set.\n");
             return NULL;
@@ -107,7 +175,7 @@ const char* ConfigFileResolve(const char* config_file) {
             snprintf(config_path, sizeof(config_path), "%s%s", xdg_data_home, config_file);
         }
         else if (home) {
-            snprintf(config_path, sizeof(config_path), "%s%s", home, config_file);
+            snprintf(config_path, sizeof(config_path), "%s/.local/share/%s", home, config_file);
         }
         else {
             fprintf(stderr, "Error: Neither XDG_CONFIG_HOME nor HOME is set.\n");

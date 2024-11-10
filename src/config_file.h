@@ -3,10 +3,11 @@
 
 #include <stdbool.h>
 
-#define CONFIG_FILE_DEFAULT  "/.config/type-trainer/config.txt"
-#define CONFIG_DATA_FILE_ACCURACY "/.config/type-trainer/accuracy"
-#define CONFIG_DATA_FILE_SPEED    "/.config/type-trainer/speed"
+#define CONFIG_FILE_DEFAULT  "type-trainer/config.txt"
+#define CONFIG_DATA_FILE_ACCURACY "type-trainer/accuracy"
+#define CONFIG_DATA_FILE_SPEED    "type-trainer/speed"
 
+bool createConfigFiles();
 bool ConfigFileInit(const char* file_name);
 bool ConfigFileExists(const char* file_name);
 bool ConfigFileEmpty(const char* file_name);

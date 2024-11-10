@@ -41,26 +41,7 @@ void Game_init(Game* game) {
         SDL_Log("Failed to load the font! SDL_ttf Error: %s\n", TTF_GetError());
         return;
     }
-
-    if (ConfigFileExists(CONFIG_DATA_FILE_ACCURACY)) {
-        if (ConfigFileEmpty(CONFIG_DATA_FILE_ACCURACY)) {
-            ConfigFileWriteInt(CONFIG_DATA_FILE_ACCURACY, 0);
-        }
-    }
-    else {
-        ConfigFileInit(CONFIG_DATA_FILE_ACCURACY);
-        ConfigFileWriteInt(CONFIG_DATA_FILE_ACCURACY, 0);
-    }
-    if (ConfigFileExists(CONFIG_DATA_FILE_SPEED)) {
-        if (ConfigFileEmpty(CONFIG_DATA_FILE_SPEED)) {
-            ConfigFileWriteInt(CONFIG_DATA_FILE_SPEED, 0);
-        }
-    }
-    else {
-        ConfigFileInit(CONFIG_DATA_FILE_SPEED);
-        ConfigFileWriteInt(CONFIG_DATA_FILE_SPEED, 0);
-    }
-
+    createConfigFiles();
     GameMetrics_init(&game->metrics.metrics);
     GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
     GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
