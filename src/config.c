@@ -77,7 +77,7 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
             config->font_size.is_set = true;
             break;
         case CONFIG_NAME_TOTAL_WORDS:
-            config->total_words.value.int_value = 30;
+            config->total_words.value.int_value = 12;
             config->total_words.type = CONFIG_TYPE_INT;
             config->total_words.is_set = true;
             break;

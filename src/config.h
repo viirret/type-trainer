@@ -50,8 +50,13 @@ typedef struct {
     ConfigItem color_text_typed;
 } Config;
 
+// Read config file.
 int Config_load(Config* config);
+
+// Use all default configs.
 void Config_useDefault(Config* config);
+
+// Use default config for specific item.
 void Config_useDefaultForItem(Config* config, ConfigItem* configItem);
 
 #endif

@@ -12,6 +12,8 @@ bool ConfigFileInit(const char* file_name);
 bool ConfigFileExists(const char* file_name);
 bool ConfigFileEmpty(const char* file_name);
 bool ConfigFileWriteInt(const char* file_name, int number);
+
+// Add tilde or XDG path.
 const char* ConfigFileResolve(const char* file_name);
 
 #endif
