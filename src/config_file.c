@@ -41,7 +41,7 @@ bool createConfigFiles() {
     snprintf(full_config_dir, sizeof(full_config_dir), "%s%s", home, config_dir);
     snprintf(full_data_dir, sizeof(full_data_dir), "%s%s", home, data_dir);
 
-    if (!create_directory(full_config_dir) || !create_directory(full_data_dir)) {
+    if (!create_directory(full_data_dir)) {
         return false;
     }
 
@@ -59,7 +59,6 @@ bool createConfigFiles() {
         return false;
     }
     fclose(s_file);
-    ConfigFileWriteInt(speed_file, 0);
 
     FILE* a_file = fopen(accuracy_file, "a");
     if (!a_file) {
@@ -67,7 +66,6 @@ bool createConfigFiles() {
         return false;
     }
     fclose(a_file);
-    ConfigFileWriteInt(accuracy_file, 0);
 
     return true;
 }

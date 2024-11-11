@@ -16,7 +16,6 @@ int containsNonAscii(const char* word) {
 
 void Word_init(Word* word, const char* dictionary_path) {
     fflush(stdout);
-    printf("Using words from path: %s\n", dictionary_path);
     word->total_lines = 0;
     word->lines = NULL;
 
@@ -55,7 +54,6 @@ void Word_init(Word* word, const char* dictionary_path) {
 
         if (strlen(line) < 10) {
             if (index >= line_count) {
-                fprintf(stderr, "Index out of bounds: %d\n", index);
                 break;
             }
 
@@ -70,7 +68,7 @@ void Word_init(Word* word, const char* dictionary_path) {
     }
 
     word->total_lines = line_count;
-    printf("Total lines: %d\n", word->total_lines);
+    printf("Total lines in %s: %d\n", dictionary_path, word->total_lines);
     fclose(file);
 }
 

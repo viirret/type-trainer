@@ -3,13 +3,7 @@
 #include "config_file.h"
 
 void modifyItemString(ConfigItem* item, const char* value) {
-    item->value.str_value = malloc(strlen(value) + 1);
-    if (item->value.str_value) {
-        strcpy(item->value.str_value, value);
-    }
-    else {
-        printf("Unsuccessfull malloc");
-    }
+    item->value.str_value = (char*)value;
     item->type = CONFIG_TYPE_STRING;
     item->is_set = true;
 }
@@ -36,7 +30,7 @@ const char* configNameTypeToString(ConfigNameType type) {
     switch (type) {
         case CONFIG_NAME_DICTIONARY: return "dictionary";
         case CONFIG_NAME_FONT: return "font";
-        case CONFIG_NAME_PATH_SIZE: return "path_size";
+        case CONFIG_NAME_FONT_SIZE: return "path_size";
         case CONFIG_NAME_TOTAL_WORDS: return "total_words";
         case CONFIG_NAME_ADVANCE_ON_FAILURE: return "advance_on_failure";
         case CONFIG_NAME_COLOR_BACKGROUND: return "color_background";
@@ -50,7 +44,7 @@ const char* configNameTypeToString(ConfigNameType type) {
 void Config_useDefault(Config* config) {
     Config_useDefaultForItem(config, &config->dictionary);
     Config_useDefaultForItem(config, &config->font);
-    Config_useDefaultForItem(config, &config->path_size);
+    Config_useDefaultForItem(config, &config->font_size);
     Config_useDefaultForItem(config, &config->total_words);
     Config_useDefaultForItem(config, &config->advance_on_failure);
     Config_useDefaultForItem(config, &config->color_background);
@@ -71,10 +65,10 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
             config->font.type = CONFIG_TYPE_STRING;
             config->font.is_set = true;
             break;
-        case CONFIG_NAME_PATH_SIZE:
-            config->path_size.value.int_value = 28;
-            config->path_size.type = CONFIG_TYPE_INT;
-            config->path_size.is_set = true;
+        case CONFIG_NAME_FONT_SIZE:
+            config->font_size.value.int_value = 28;
+            config->font_size.type = CONFIG_TYPE_INT;
+            config->font_size.is_set = true;
             break;
         case CONFIG_NAME_TOTAL_WORDS:
             config->total_words.value.int_value = 30;
@@ -84,10 +78,10 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
         case CONFIG_NAME_ADVANCE_ON_FAILURE:
             config->advance_on_failure.value.boolean_value = true;
             config->advance_on_failure.type = CONFIG_TYPE_BOOLEAN;
-            config->advance_on_failure.is_set = true;
+            config->advance_on_failure.is_set = false;
             break;
         case CONFIG_NAME_COLOR_BACKGROUND:
-            config->color_background.value.color_value = (SDL_Color){0, 255, 0, 255};
+            config->color_background.value.color_value = (SDL_Color){10, 15, 10, 255};
             config->color_background.type = CONFIG_TYPE_COLOR;
             config->color_background.is_set = true;
             break;
@@ -102,7 +96,7 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
             config->color_text_error.is_set = true;
             break;
         case CONFIG_NAME_COLOR_TEXT_TYPED:
-            config->color_text_typed.value.color_value = (SDL_Color){0, 0, 0, 255};
+            config->color_text_typed.value.color_value = (SDL_Color){40, 245, 30, 255};
             config->color_text_typed.type = CONFIG_TYPE_COLOR;
             config->color_text_typed.is_set = true;
             break;
@@ -162,13 +156,10 @@ bool hasQuotes(const char* str) {
 void loadString(ConfigItem* item, char* key, const char* value) {
     const char* item_name = configNameTypeToString(item->name);
     if (strcmp(key, item_name) == 0) {
-        printf("Match: %s\n", item_name);
         if (hasQuotes(value)) {
-            printf("Has quotes: %s\n", value);
             modifyItemString(item, removeQuotes(value));
         }
         else {
-            printf("No quotes: %s\n", value);
             modifyItemString(item, value);
         }
     }
@@ -234,8 +225,8 @@ int Config_load(Config* config) {
     config->font.is_set = false;
     config->font.name = CONFIG_NAME_FONT;
 
-    config->path_size.is_set = false;
-    config->path_size.name = CONFIG_NAME_PATH_SIZE;
+    config->font_size.is_set = false;
+    config->font_size.name = CONFIG_NAME_FONT_SIZE;
 
     config->total_words.is_set = false;
     config->total_words.name = CONFIG_NAME_TOTAL_WORDS;
@@ -290,8 +281,8 @@ int Config_load(Config* config) {
             else if (strcmp(key, "font") == 0) {
                 loadString(&config->font, key, value);
             }
-            else if (strcmp(key, "path_size") == 0) {
-                loadInt(&config->path_size, key, value);
+            else if (strcmp(key, "font_size") == 0) {
+                loadInt(&config->font_size, key, value);
             }
             else if (strcmp(key, "total_words") == 0) {
                 loadInt(&config->total_words, key, value);
@@ -325,9 +316,9 @@ int Config_load(Config* config) {
         printf("Config: Font not set, using default\n");
         Config_useDefaultForItem(config, &config->font);
     }
-    if (!config->path_size.is_set) {
+    if (!config->font_size.is_set) {
         printf("Config: Path size not set, using default\n");
-        Config_useDefaultForItem(config, &config->path_size);
+        Config_useDefaultForItem(config, &config->font_size);
     }
     if (!config->total_words.is_set) {
         printf("Config: Total words not set, using default\n");
@@ -355,12 +346,5 @@ int Config_load(Config* config) {
     }
     fclose(file);
     return 0;
-}
-
-// Function to free the config
-void Config_destroy(Config* config) {
-    if (config) {
-        free(config->font.value.str_value);
-    }
 }
 

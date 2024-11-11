@@ -8,7 +8,7 @@
 typedef enum {
     CONFIG_NAME_DICTIONARY,
     CONFIG_NAME_FONT,
-    CONFIG_NAME_PATH_SIZE,
+    CONFIG_NAME_FONT_SIZE,
     CONFIG_NAME_TOTAL_WORDS,
     CONFIG_NAME_ADVANCE_ON_FAILURE,
     CONFIG_NAME_COLOR_BACKGROUND,
@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
     ConfigItem dictionary;
     ConfigItem font;
-    ConfigItem path_size;
+    ConfigItem font_size;
     ConfigItem total_words;
     ConfigItem advance_on_failure;
     ConfigItem color_background;
@@ -51,7 +51,6 @@ typedef struct {
 } Config;
 
 int Config_load(Config* config);
-void Config_destroy(Config* config);
 void Config_useDefault(Config* config);
 void Config_useDefaultForItem(Config* config, ConfigItem* configItem);
 

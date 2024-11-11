@@ -36,7 +36,7 @@ void Game_init(Game* game) {
     Config_load(&game->config);
     Window_init(&game->window);
     Word_init(&game->word, game->config.dictionary.value.str_value);
-    game->font = TTF_OpenFont(game->config.font.value.str_value, game->config.path_size.value.int_value);
+    game->font = TTF_OpenFont(game->config.font.value.str_value, game->config.font_size.value.int_value);
     if (!game->font) {
         SDL_Log("Failed to load the font! SDL_ttf Error: %s\n", TTF_GetError());
         return;
@@ -63,7 +63,6 @@ void destroyTextures(Game* game) {
 }
 
 void Game_destroy(Game* game) {
-    Config_destroy(&game->config);
     Word_destroy(&game->word);
 
     destroyTextures(game);
