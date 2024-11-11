@@ -3,7 +3,13 @@
 #include "config_file.h"
 
 void modifyItemString(ConfigItem* item, const char* value) {
-    item->value.str_value = (char*)value;
+    item->value.str_value = malloc(strlen(value) + 1);
+    if (item->value.str_value) {
+        strcpy(item->value.str_value, value);
+    }
+    else {
+        printf("Unsuccessfull malloc");
+    }
     item->type = CONFIG_TYPE_STRING;
     item->is_set = true;
 }
@@ -30,7 +36,7 @@ const char* configNameTypeToString(ConfigNameType type) {
     switch (type) {
         case CONFIG_NAME_DICTIONARY: return "dictionary";
         case CONFIG_NAME_FONT: return "font";
-        case CONFIG_NAME_FONT_SIZE: return "path_size";
+        case CONFIG_NAME_FONT_SIZE: return "font_size";
         case CONFIG_NAME_TOTAL_WORDS: return "total_words";
         case CONFIG_NAME_ADVANCE_ON_FAILURE: return "advance_on_failure";
         case CONFIG_NAME_COLOR_BACKGROUND: return "color_background";
@@ -76,9 +82,9 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
             config->total_words.is_set = true;
             break;
         case CONFIG_NAME_ADVANCE_ON_FAILURE:
-            config->advance_on_failure.value.boolean_value = true;
+            config->advance_on_failure.value.boolean_value = false;
             config->advance_on_failure.type = CONFIG_TYPE_BOOLEAN;
-            config->advance_on_failure.is_set = false;
+            config->advance_on_failure.is_set = true;
             break;
         case CONFIG_NAME_COLOR_BACKGROUND:
             config->color_background.value.color_value = (SDL_Color){10, 15, 10, 255};
@@ -317,7 +323,7 @@ int Config_load(Config* config) {
         Config_useDefaultForItem(config, &config->font);
     }
     if (!config->font_size.is_set) {
-        printf("Config: Path size not set, using default\n");
+        printf("Config: Font size not set, using default\n");
         Config_useDefaultForItem(config, &config->font_size);
     }
     if (!config->total_words.is_set) {

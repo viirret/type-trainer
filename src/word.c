@@ -22,7 +22,7 @@ void Word_init(Word* word, const char* dictionary_path) {
     // Open the dictionary file
     FILE* file = fopen(dictionary_path, "r");
     if (!file) {
-        fprintf(stderr, "Failed to open dictionary file.\n");
+        fprintf(stderr, "Failed to open dictionary file in path %s\n", dictionary_path);
         return;
     }
 

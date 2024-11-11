@@ -1,3 +1,12 @@
-font=usr/share/fonts/gnu-free/FreeMono.otf
-path_size=28
+# Add this file to ~/.config/type-trainer/
+
+dictionary=/usr/share/dict/american-english
+font=/usr/share/fonts/gnu-free/FreeMono.otf
+font_size=28
 total_words=10
+advance_on_failure=false
+
+color_background=0,0,0,255
+color_text_default=210,220,240,255
+color_text_error=150,0,30,255
+color_text_typed=130,100,100,255
