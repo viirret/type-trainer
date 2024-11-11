@@ -169,7 +169,7 @@ const char* ConfigFileResolve(const char* config_file) {
         }
     }
     else if (strcmp(config_file, CONFIG_DATA_FILE_SPEED) == 0 || strcmp(config_file, CONFIG_DATA_FILE_ACCURACY) == 0) {
-        if (xdg_config_home && strlen(xdg_config_home) > 0) {
+        if (xdg_data_home && strlen(xdg_data_home) > 0) {
             snprintf(config_path, sizeof(config_path), "%s%s", xdg_data_home, config_file);
         }
         else if (home) {
