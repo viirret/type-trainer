@@ -8,6 +8,7 @@
 #include "game_metrics.h"
 
 #include <time.h>
+#include <stdint.h>
 
 #include <SDL2/SDL_ttf.h>
 
@@ -49,7 +50,7 @@ typedef struct {
     SDL_Color* colors;
 
     // Index the game is currently writing next.
-    int checkIndex;
+    uint32_t checkIndex;
 
     // Time measurement.
     struct timespec startTime;

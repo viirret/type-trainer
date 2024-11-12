@@ -26,20 +26,18 @@ bool createConfigFiles() {
         return false;
     }
 
-    // Define file paths
-    const char* config_dir = "/.config/type-trainer";
-    const char* data_dir = "/.local/share/type-trainer";
+    // File paths
     char config_file[512], speed_file[512], accuracy_file[512];
 
     // Construct full file paths
-    snprintf(config_file, sizeof(config_file), "%s%s/config.txt", home, config_dir);
-    snprintf(speed_file, sizeof(speed_file), "%s%s/speed", home, data_dir);
-    snprintf(accuracy_file, sizeof(accuracy_file), "%s%s/accuracy", home, data_dir);
+    snprintf(config_file, sizeof(config_file), "%s", ConfigFileResolve(CONFIG_FILE_DEFAULT));
+    snprintf(speed_file, sizeof(speed_file), "%s", ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
+    snprintf(accuracy_file, sizeof(accuracy_file), "%s", ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
 
     // Create necessary directories
     char full_config_dir[512], full_data_dir[512];
-    snprintf(full_config_dir, sizeof(full_config_dir), "%s%s", home, config_dir);
-    snprintf(full_data_dir, sizeof(full_data_dir), "%s%s", home, data_dir);
+    snprintf(full_config_dir, sizeof(full_config_dir), "%s", ConfigFileResolve(CONFIG_FILE_DEFAULT));
+    snprintf(full_data_dir, sizeof(full_data_dir), "%s", ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
 
     if (!create_directory(full_data_dir)) {
         return false;
@@ -103,7 +101,7 @@ bool ConfigFileInit(const char* file_name) {
         // If the file doesn't exist, try to create it in write mode
         file = fopen(file_path, "w");
         if (!file) {
-            perror("Failed to create new config file");
+            printf("Failed to create new config file %s", file_path);
             return false;
         }
 
@@ -158,7 +156,7 @@ const char* ConfigFileResolve(const char* config_file) {
     if (strcmp(config_file, CONFIG_FILE_DEFAULT) == 0) {
         if (xdg_config_home && strlen(xdg_config_home) > 0) {
             // Use XDG_CONFIG_HOME if it is set
-            snprintf(config_path, sizeof(config_path), "%s%s", xdg_config_home, config_file);
+            snprintf(config_path, sizeof(config_path), "%s/%s", xdg_config_home, config_file);
         }
         else if (home) {
             // Fallback to HOME/.config if XDG_CONFIG_HOME is not set
@@ -170,7 +168,7 @@ const char* ConfigFileResolve(const char* config_file) {
     }
     else if (strcmp(config_file, CONFIG_DATA_FILE_SPEED) == 0 || strcmp(config_file, CONFIG_DATA_FILE_ACCURACY) == 0) {
         if (xdg_data_home && strlen(xdg_data_home) > 0) {
-            snprintf(config_path, sizeof(config_path), "%s%s", xdg_data_home, config_file);
+            snprintf(config_path, sizeof(config_path), "%s/%s", xdg_data_home, config_file);
         }
         else if (home) {
             snprintf(config_path, sizeof(config_path), "%s/.local/share/%s", home, config_file);
