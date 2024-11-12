@@ -11,10 +11,17 @@
 bool create_directory(const char* path) {
     struct stat st;
     if (stat(path, &st) == -1) {
+#ifdef _WIN32
+        if (mkdir(path) == -1 && errno != EEXIST) {
+            perror("Failed to create directory");
+            return false;
+        }
+#else
         if (mkdir(path, 0755) == -1 && errno != EEXIST) {
             perror("Failed to create directory");
             return false;
         }
+#endif
     }
     return true;
 }

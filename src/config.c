@@ -62,12 +62,20 @@ void Config_useDefault(Config* config) {
 void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
     switch (configItem->name) {
         case CONFIG_NAME_DICTIONARY:
+    #ifdef _WIN32
+            config->dictionary.value.str_value = C:\Windows\WindowsUpdate";
+    #else
             config->dictionary.value.str_value = "/usr/share/dict/american-english";
+    #endif
             config->dictionary.type = CONFIG_TYPE_STRING;
             config->dictionary.is_set = true;
             break;
         case CONFIG_NAME_FONT:
+    #ifdef _WIN32
+            config->font.value.str_value = "C:\WINDOWS\FONTS\ARIAL.TTF";
+    #else
             config->font.value.str_value = "/usr/share/fonts/gnu-free/FreeMono.otf";
+    #endif
             config->font.type = CONFIG_TYPE_STRING;
             config->font.is_set = true;
             break;
