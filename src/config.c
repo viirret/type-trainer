@@ -2,7 +2,7 @@
 
 #include "config_file.h"
 
-void modifyItemString(ConfigItem* item, const char* value) {
+static void modifyItemString(ConfigItem* item, const char* value) {
     item->value.str_value = malloc(strlen(value) + 1);
     if (item->value.str_value) {
         strcpy(item->value.str_value, value);
@@ -14,25 +14,25 @@ void modifyItemString(ConfigItem* item, const char* value) {
     item->is_set = true;
 }
 
-void modifyItemInt(ConfigItem* item, int value) {
+static void modifyItemInt(ConfigItem* item, int value) {
     item->value.int_value = value;
     item->type = CONFIG_TYPE_INT;
     item->is_set = true;
 }
 
-void modifyItemBoolean(ConfigItem* item, bool value) {
+static void modifyItemBoolean(ConfigItem* item, bool value) {
     item->value.boolean_value = value;
     item->type = CONFIG_TYPE_BOOLEAN;
     item->is_set = true;
 }
 
-void modifyItemColor(ConfigItem* item, SDL_Color value) {
+static void modifyItemColor(ConfigItem* item, SDL_Color value) {
     item->value.color_value = value;
     item->type = CONFIG_TYPE_COLOR;
     item->is_set = true;
 }
 
-const char* configNameTypeToString(ConfigNameType type) {
+static const char* configNameTypeToString(ConfigNameType type) {
     switch (type) {
         case CONFIG_NAME_DICTIONARY: return "dictionary";
         case CONFIG_NAME_FONT: return "font";
@@ -63,7 +63,7 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
     switch (configItem->name) {
         case CONFIG_NAME_DICTIONARY:
     #ifdef _WIN32
-            config->dictionary.value.str_value = C:\Windows\WindowsUpdate";
+            config->dictionary.value.str_value = "C:\Windows\WindowsUpdate";
     #else
             config->dictionary.value.str_value = "/usr/share/dict/american-english";
     #endif
@@ -118,7 +118,7 @@ void Config_useDefaultForItem(Config* config, ConfigItem* configItem) {
 }
 
 // Trim leading and trailing whitespace from a string
-void trim(char* str) {
+static void trim(char* str) {
     // Trim leading whitespace
     while (isspace((unsigned char)*str)) str++;
 
@@ -129,7 +129,7 @@ void trim(char* str) {
     *(end + 1) = '\0';
 }
 
-const char* removeQuotes(const char* item_name) {
+static const char* removeQuotes(const char* item_name) {
     size_t len = strlen(item_name);
 
     // Return the original string if no braces.
@@ -151,7 +151,7 @@ const char* removeQuotes(const char* item_name) {
     return withoutBraces;
 }
 
-bool hasQuotes(const char* str) {
+static bool hasQuotes(const char* str) {
     size_t len = strlen(str);
 
     // Check if length is at least 4 for two characters at each end
@@ -167,7 +167,7 @@ bool hasQuotes(const char* str) {
     return false;
 }
 
-void loadString(ConfigItem* item, char* key, const char* value) {
+static bool loadString(ConfigItem* item, const char* key, const char* value) {
     const char* item_name = configNameTypeToString(item->name);
     if (strcmp(key, item_name) == 0) {
         if (hasQuotes(value)) {
@@ -176,10 +176,12 @@ void loadString(ConfigItem* item, char* key, const char* value) {
         else {
             modifyItemString(item, value);
         }
+        return true;
     }
+    return false;
 }
 
-bool loadBool(ConfigItem* item, char* key, const char* value) {
+static bool loadBool(ConfigItem* item, const char* key, const char* value) {
     const char* item_name = configNameTypeToString(item->name);
     if (strcmp(key, item_name) == 0) {
         if (strcmp(value, "true") == 0) {
@@ -206,59 +208,81 @@ bool loadBool(ConfigItem* item, char* key, const char* value) {
     return false;
 }
 
-void loadInt(ConfigItem* item, char* key, const char* value) {
+static bool loadInt(ConfigItem* item, const char* key, const char* value) {
     const char* item_name = configNameTypeToString(item->name);
     if (strcmp(key, item_name) == 0) {
         modifyItemInt(item, atoi(value));
+        return true;
     }
+    return false;
 }
 
-void loadColor(ConfigItem* item, char* key, const char* value) {
+static bool loadColor(ConfigItem* item, const char* key, const char* value) {
     const char* item_name = configNameTypeToString(item->name);
     if (strcmp(key, item_name) == 0) {
         int r, g, b, a;
         if (sscanf(value, "%d,%d,%d,%d", &r, &g, &b, &a) == 4) {
-            item->value.color_value = (SDL_Color){.r = r, .g = g, .b = b, .a = a};
-            item->is_set = true;
+            modifyItemColor(item, (SDL_Color){.r = r, .g = g, .b = b, .a = a});
+            return true;
         }
         else {
             printf("Invalid format for color. Expected format: R,G,B,A\n");
         }
     }
+    return false;
 }
 
 // Function to load config values from a file
-int Config_load(Config* config) {
+int Config_init(Config* config) {
     if (!ConfigFileInit(CONFIG_FILE_DEFAULT)) {
         return -1;
     }
 
     config->dictionary.is_set = false;
     config->dictionary.name = CONFIG_NAME_DICTIONARY;
+    config->dictionary.loadFunc = loadString;
 
     config->font.is_set = false;
     config->font.name = CONFIG_NAME_FONT;
+    config->font.loadFunc = loadString;
 
     config->font_size.is_set = false;
     config->font_size.name = CONFIG_NAME_FONT_SIZE;
+    config->font_size.loadFunc = loadInt;
 
     config->total_words.is_set = false;
     config->total_words.name = CONFIG_NAME_TOTAL_WORDS;
+    config->total_words.loadFunc = loadInt;
 
     config->advance_on_failure.is_set = false;
     config->advance_on_failure.name = CONFIG_NAME_ADVANCE_ON_FAILURE;
+    config->advance_on_failure.loadFunc = loadBool;
 
     config->color_background.is_set = false;
     config->color_background.name = CONFIG_NAME_COLOR_BACKGROUND;
+    config->color_background.loadFunc = loadColor;
 
     config->color_text_default.is_set = false;
     config->color_text_default.name = CONFIG_NAME_COLOR_TEXT_DEFAULT;
+    config->color_text_default.loadFunc = loadColor;
 
     config->color_text_error.is_set = false;
     config->color_text_error.name = CONFIG_NAME_COLOR_TEXT_ERROR;
+    config->color_text_error.loadFunc = loadColor;
 
     config->color_text_typed.is_set = false;
     config->color_text_typed.name = CONFIG_NAME_COLOR_TEXT_TYPED;
+    config->color_text_typed.loadFunc = loadColor;
+
+    config->items[0] = &config->dictionary;
+    config->items[1] = &config->font;
+    config->items[2] = &config->font_size;
+    config->items[3] = &config->total_words;
+    config->items[4] = &config->advance_on_failure;
+    config->items[5] = &config->color_background;
+    config->items[6] = &config->color_text_default;
+    config->items[7] = &config->color_text_error;
+    config->items[8] = &config->color_text_typed;
 
     FILE* file = NULL;
 
@@ -280,84 +304,34 @@ int Config_load(Config* config) {
     const char* format = "%63[^=]=%127[^\n]";
 
     while (fgets(line, sizeof(line), file)) {
-        // Trim lines.
         line[strcspn(line, "\n")] = 0;
         trim(line);
 
-        // Parse the line into 'key' and 'value'.
         if (sscanf(line, format, key, value) == 2) {
             trim(key);
             trim(value);
 
-            if (strcmp(key, "dictionary") == 0) {
-                loadString(&config->dictionary, key, value);
+            bool match = false;
+            for (int i = 0; i < (int)(sizeof(config->items) / sizeof(config->items[0])); i++) {
+                if (strcmp(key, configNameTypeToString(config->items[i]->name)) == 0) {
+                    config->items[i]->loadFunc(config->items[i], key, value);
+                    match = true;
+                    break;
+                }
             }
-            else if (strcmp(key, "font") == 0) {
-                loadString(&config->font, key, value);
-            }
-            else if (strcmp(key, "font_size") == 0) {
-                loadInt(&config->font_size, key, value);
-            }
-            else if (strcmp(key, "total_words") == 0) {
-                loadInt(&config->total_words, key, value);
-            }
-            else if (strcmp(key, "advance_on_failure") == 0) {
-                loadBool(&config->advance_on_failure, key, value);
-            }
-            else if (strcmp(key, "color_background") == 0) {
-                loadColor(&config->color_background, key, value);
-            }
-            else if (strcmp(key, "color_text_default") == 0) {
-                loadColor(&config->color_text_default, key, value);
-            }
-            else if (strcmp(key, "color_text_error") == 0) {
-                loadColor(&config->color_text_error, key, value);
-            }
-            else if (strcmp(key, "color_text_typed") == 0) {
-                loadColor(&config->color_text_typed, key, value);
-            }
-            else {
+            if (!match) {
                 printf("Warning: Skipping invalid line: %s\n", line);
             }
         }
     }
 
-    if (!config->dictionary.is_set) {
-        printf("Config: Dictionary not set, using default\n");
-        Config_useDefaultForItem(config, &config->dictionary);
+    for (int i = 0; i < (int)(sizeof(config->items) / sizeof(config->items[0])); i++) {
+        if (!config->items[i]->is_set) {
+            printf("Config: %s not set, using default\n", configNameTypeToString(config->items[i]->name));
+            Config_useDefaultForItem(config, config->items[i]);
+        }
     }
-    if (!config->font.is_set) {
-        printf("Config: Font not set, using default\n");
-        Config_useDefaultForItem(config, &config->font);
-    }
-    if (!config->font_size.is_set) {
-        printf("Config: Font size not set, using default\n");
-        Config_useDefaultForItem(config, &config->font_size);
-    }
-    if (!config->total_words.is_set) {
-        printf("Config: Total words not set, using default\n");
-        Config_useDefaultForItem(config, &config->total_words);
-    }
-    if (!config->advance_on_failure.is_set) {
-        printf("Config: Advance on failure not set, using default\n");
-        Config_useDefaultForItem(config, &config->advance_on_failure);
-    }
-    if (!config->color_background.is_set) {
-        printf("Config: Background color not set, using default\n");
-        Config_useDefaultForItem(config, &config->color_background);
-    }
-    if (!config->color_text_default.is_set) {
-        printf("Config: Color text default not set, using default\n");
-        Config_useDefaultForItem(config, &config->color_text_default);
-    }
-    if (!config->color_text_error.is_set) {
-        printf("Config: Color text error not set, using default\n");
-        Config_useDefaultForItem(config, &config->color_text_error);
-    }
-    if (!config->color_text_typed.is_set) {
-        printf("Config: Color text typed not set, using default\n");
-        Config_useDefaultForItem(config, &config->color_text_typed);
-    }
+
     fclose(file);
     return 0;
 }

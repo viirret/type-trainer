@@ -18,8 +18,8 @@ typedef struct {
 } MetricsTextures;
 
 typedef struct {
-    int failures;
-    int lastLetter;
+    uint32_t failures;
+    uint32_t lastLetter;
 } Accuracy;
 
 typedef struct {

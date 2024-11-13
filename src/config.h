@@ -31,12 +31,15 @@ typedef union {
     bool boolean_value;
 } ConfigValue;
 
-typedef struct {
+typedef struct ConfigItem ConfigItem;
+
+struct ConfigItem {
     ConfigNameType name;
     ConfigValue value;
     ConfigValueType type;
     bool is_set;
-} ConfigItem;
+    bool (*loadFunc)(ConfigItem* name, const char* key, const char* value);
+};
 
 typedef struct {
     ConfigItem dictionary;
@@ -48,10 +51,12 @@ typedef struct {
     ConfigItem color_text_default;
     ConfigItem color_text_error;
     ConfigItem color_text_typed;
+
+    ConfigItem* items[9];
 } Config;
 
 // Read config file.
-int Config_load(Config* config);
+int Config_init(Config* config);
 
 // Use all default configs.
 void Config_useDefault(Config* config);

@@ -1,4 +1,5 @@
 #include "game.h"
+#include "config.h"
 #include "config_file.h"
 
 void initTextures(Game* game) {
@@ -33,7 +34,7 @@ void endGame(Game* game) {
 }
 
 void Game_init(Game* game) {
-    Config_load(&game->config);
+    Config_init(&game->config);
     Window_init(&game->window);
     Word_init(&game->word, game->config.dictionary.value.str_value);
     game->font = TTF_OpenFont(game->config.font.value.str_value, game->config.font_size.value.int_value);
