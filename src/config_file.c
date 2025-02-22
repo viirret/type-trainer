@@ -7,22 +7,27 @@
 #include <string.h>
 #include <errno.h>
 
-// Helper function to create directories if they do not exist
+// Helper function to create directories recursively
 bool create_directory(const char* path) {
-    struct stat st;
-    if (stat(path, &st) == -1) {
-#ifdef _WIN32
-        if (mkdir(path) == -1 && errno != EEXIST) {
-            perror("Failed to create directory");
-            return false;
+    char temp[512];
+    snprintf(temp, sizeof(temp), "%s", path);
+
+    for (char* p = temp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0'; // Temporarily terminate string
+            if (mkdir(temp, 0755) == -1 && errno != EEXIST) {
+                perror("Failed to create directory");
+                return false;
+            }
+            *p = '/'; // Restore the slash
         }
-#else
-        if (mkdir(path, 0755) == -1 && errno != EEXIST) {
-            perror("Failed to create directory");
-            return false;
-        }
-#endif
     }
+    // Create the final directory in case it's not covered in the loop
+    if (mkdir(temp, 0755) == -1 && errno != EEXIST) {
+        perror("Failed to create directory");
+        return false;
+    }
+
     return true;
 }
 
@@ -33,20 +38,63 @@ bool createConfigFiles() {
         return false;
     }
 
-    // File paths
-    char config_file[512], speed_file[512], accuracy_file[512];
+    // Resolve paths
+    const char* config_file = ConfigFileResolve(CONFIG_FILE_DEFAULT);
+    const char* speed_file = ConfigFileResolve(CONFIG_DATA_FILE_SPEED);
+    const char* accuracy_file = ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY);
 
-    // Construct full file paths
-    snprintf(config_file, sizeof(config_file), "%s", ConfigFileResolve(CONFIG_FILE_DEFAULT));
-    snprintf(speed_file, sizeof(speed_file), "%s", ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
-    snprintf(accuracy_file, sizeof(accuracy_file), "%s", ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
+    if (!config_file || !speed_file || !accuracy_file) {
+        fprintf(stderr, "Error: Config file resolution failed.\n");
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
+        return false;
+    }
 
-    // Create necessary directories
-    char full_config_dir[512], full_data_dir[512];
-    snprintf(full_config_dir, sizeof(full_config_dir), "%s", ConfigFileResolve(CONFIG_FILE_DEFAULT));
-    snprintf(full_data_dir, sizeof(full_data_dir), "%s", ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
+    // Extract directories from file paths
+    char config_dir[512], speed_dir[512], accuracy_dir[512];
 
-    if (!create_directory(full_data_dir)) {
+    strncpy(config_dir, config_file, sizeof(config_dir));
+    strncpy(speed_dir, speed_file, sizeof(speed_dir));
+    strncpy(accuracy_dir, accuracy_file, sizeof(accuracy_dir));
+
+    char* last_slash;
+
+    // Extract directory path for config
+    last_slash = strrchr(config_dir, '/');
+    if (last_slash) *last_slash = '\0';
+    else strcpy(config_dir, "."); // If no slash, default to current directory
+
+    // Extract directory path for speed
+    last_slash = strrchr(speed_dir, '/');
+    if (last_slash) *last_slash = '\0';
+    else strcpy(speed_dir, ".");
+
+    // Extract directory path for accuracy
+    last_slash = strrchr(accuracy_dir, '/');
+    if (last_slash) *last_slash = '\0';
+    else strcpy(accuracy_dir, ".");
+
+    // Ensure directories exist
+    if (!create_directory(config_dir)) {
+        fprintf(stderr, "Failed to create config directory: %s\n", config_dir);
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
+        return false;
+    }
+    if (!create_directory(speed_dir)) {
+        fprintf(stderr, "Failed to create speed directory: %s\n", speed_dir);
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
+        return false;
+    }
+    if (!create_directory(accuracy_dir)) {
+        fprintf(stderr, "Failed to create accuracy directory: %s\n", accuracy_dir);
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
         return false;
     }
 
@@ -54,6 +102,9 @@ bool createConfigFiles() {
     FILE* c_file = fopen(config_file, "a");
     if (!c_file) {
         perror("Failed to create config file");
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
         return false;
     }
     fclose(c_file);
@@ -61,6 +112,9 @@ bool createConfigFiles() {
     FILE* s_file = fopen(speed_file, "a");
     if (!s_file) {
         perror("Failed to create speed file");
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
         return false;
     }
     fclose(s_file);
@@ -68,10 +122,15 @@ bool createConfigFiles() {
     FILE* a_file = fopen(accuracy_file, "a");
     if (!a_file) {
         perror("Failed to create accuracy file");
+        free((void*)config_file);
+        free((void*)speed_file);
+        free((void*)accuracy_file);
         return false;
     }
     fclose(a_file);
-
+    free((void*)config_file);
+    free((void*)speed_file);
+    free((void*)accuracy_file);
     return true;
 }
 
@@ -79,11 +138,14 @@ bool createConfigFiles() {
 bool ConfigFileExists(const char* file_name) {
     const char* file_path = ConfigFileResolve(file_name);
     FILE* file = fopen(file_path, "r");
+    free((void*)file_path);
     return file;
 }
 
 bool ConfigFileEmpty(const char* file_name) {
-    FILE* file = fopen(ConfigFileResolve(file_name), "r");
+    const char* resolved_file = ConfigFileResolve(file_name);
+    FILE* file = fopen(resolved_file, "r");
+    free((void*)resolved_file);
     if (!file) {
         perror("Failed to open file");
         return false;
@@ -100,15 +162,15 @@ bool ConfigFileEmpty(const char* file_name) {
 }
 
 bool ConfigFileInit(const char* file_name) {
-    const char* file_path = ConfigFileResolve(file_name);
+    const char* resolved_file = ConfigFileResolve(file_name);
+    FILE* file = fopen(resolved_file, "r");
 
-    FILE* file = fopen(file_path, "r");
-
-    if (!file){
+    if (!file) {
         // If the file doesn't exist, try to create it in write mode
-        file = fopen(file_path, "w");
+        file = fopen(resolved_file, "w");
         if (!file) {
-            printf("Failed to create new config file %s", file_path);
+            printf("Failed to create new config file %s", resolved_file);
+            free((void*)resolved_file);
             return false;
         }
 
@@ -116,24 +178,29 @@ bool ConfigFileInit(const char* file_name) {
         fclose(file);
 
         // Check if the file was created successfully by re-opening it in read mode
-        file = fopen(file_path, "r");
+        file = fopen(resolved_file, "r");
         if (file) {
+            free((void*)resolved_file);
             fclose(file);
             return true;  // File created successfully
         }
         else {
+            free((void*)resolved_file);
             perror("Failed to verify new config file");
             return false;
         }
     }
     else {
+        free((void*)resolved_file);
         return true;
     }
 }
 
 bool ConfigFileWriteInt(const char* file_name, int number) {
     if (ConfigFileExists(file_name)) {
-        FILE* file = fopen(ConfigFileResolve(file_name), "w");
+        const char* resolved_file = ConfigFileResolve(file_name);
+        FILE* file = fopen(resolved_file, "w");
+        free((void*)resolved_file);
         if (!file) {
             perror("Failed to open file for writing");
             return false;
@@ -158,35 +225,40 @@ const char* ConfigFileResolve(const char* config_file) {
     const char* xdg_config_home = getenv("XDG_CONFIG_HOME");
     const char* xdg_data_home = getenv("XDG_DATA_HOME");
 
-    static char config_path[512];
+    char* config_path = (char*)malloc(512);
+    if (!config_path) {
+        fprintf(stderr, "Error: Memory allocation failed.\n");
+        return NULL;
+    }
 
     if (strcmp(config_file, CONFIG_FILE_DEFAULT) == 0) {
         if (xdg_config_home && strlen(xdg_config_home) > 0) {
-            // Use XDG_CONFIG_HOME if it is set
-            snprintf(config_path, sizeof(config_path), "%s/%s", xdg_config_home, config_file);
-        }
-        else if (home) {
-            // Fallback to HOME/.config if XDG_CONFIG_HOME is not set
-            snprintf(config_path, sizeof(config_path), "%s/.config/%s", home, config_file);
+            snprintf(config_path, 512, "%s/%s", xdg_config_home, config_file);
+        } else if (home) {
+            snprintf(config_path, 512, "%s/.config/%s", home, config_file);
         } else {
             fprintf(stderr, "Error: Neither XDG_CONFIG_HOME nor HOME is set.\n");
             return NULL;
         }
     }
-    else if (strcmp(config_file, CONFIG_DATA_FILE_SPEED) == 0 || strcmp(config_file, CONFIG_DATA_FILE_ACCURACY) == 0) {
+    else if (strcmp(config_file, CONFIG_DATA_FILE_SPEED) == 0) {
         if (xdg_data_home && strlen(xdg_data_home) > 0) {
-            snprintf(config_path, sizeof(config_path), "%s/%s", xdg_data_home, config_file);
+            snprintf(config_path, 512, "%s/%s", xdg_data_home, config_file);
+        } else {
+            snprintf(config_path, 512, "%s/.local/share/%s", home, config_file);
         }
-        else if (home) {
-            snprintf(config_path, sizeof(config_path), "%s/.local/share/%s", home, config_file);
-        }
-        else {
-            fprintf(stderr, "Error: Neither XDG_CONFIG_HOME nor HOME is set.\n");
-            return NULL;
+    }
+    else if (strcmp(config_file, CONFIG_DATA_FILE_ACCURACY) == 0) {
+        if (xdg_data_home && strlen(xdg_data_home) > 0) {
+            snprintf(config_path, 512, "%s/%s", xdg_data_home, config_file);
+        } else {
+            snprintf(config_path, 512, "%s/.local/share/%s", home, config_file);
         }
     }
     else {
-        printf("No valid config file path");
+        fprintf(stderr, "Error: Unknown config file key.\n");
+        free(config_path);
+        return NULL;
     }
 
     return config_path;

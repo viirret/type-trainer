@@ -294,6 +294,7 @@ int Config_init(Config* config) {
     if (configPath) {
         file = fopen(configPath, "r");
     }
+    free((void*)configPath);
 
     if (!file) {
         printf("Could not find config! Using default values\n");

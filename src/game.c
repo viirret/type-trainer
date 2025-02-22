@@ -47,8 +47,15 @@ void Game_init(Game* game) {
     }
     createConfigFiles();
     GameMetrics_init(&game->metrics.metrics);
-    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
-    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
+
+    // Load initial accuracy and speed.
+    const char* accuracy_file = ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY);
+    const char* speed_file = ConfigFileResolve(CONFIG_DATA_FILE_SPEED);
+    GameMetrics_loadAccuracy(&game->metrics.metrics, accuracy_file);
+    GameMetrics_loadSpeed(&game->metrics.metrics, speed_file);
+
+    free((void*)accuracy_file);
+    free((void*)speed_file);
 
     char accuracy[50];
     char speed[50];
@@ -186,8 +193,14 @@ void updateMetricsTextures(Game* game) {
     char accuracy[50];
     char speed[50];
 
-    GameMetrics_loadAccuracy(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY));
-    GameMetrics_loadSpeed(&game->metrics.metrics, ConfigFileResolve(CONFIG_DATA_FILE_SPEED));
+    const char* accuracy_file = ConfigFileResolve(CONFIG_DATA_FILE_ACCURACY);
+    const char* speed_file = ConfigFileResolve(CONFIG_DATA_FILE_SPEED);
+
+    GameMetrics_loadAccuracy(&game->metrics.metrics, accuracy_file);
+    GameMetrics_loadSpeed(&game->metrics.metrics, speed_file);
+
+    free((void*)accuracy_file);
+    free((void*)speed_file);
 
     snprintf(accuracy, sizeof(accuracy), "Last accuracy: %.2f", GameMetrics_getAverageAccuracy(&game->metrics.metrics));
     snprintf(speed, sizeof(speed), "Last speed: %.2f", GameMetrics_getAverageSpeed(&game->metrics.metrics));
