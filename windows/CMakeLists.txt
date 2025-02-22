@@ -8,9 +8,9 @@ file(GLOB SRC_FILES "${SRC_DIR}/*.c")
 
 add_executable(typing_trainer ${SRC_FILES})
 
-find_package(SDL2 REQUIRED)
-find_package(SDL2_ttf REQUIRED)
-target_link_libraries(typing_trainer PRIVATE SDL2::SDL2 SDL2_ttf::SDL2_ttf)
+find_package(SDL3 REQUIRED)
+find_package(SDL3_ttf REQUIRED)
+target_link_libraries(typing_trainer PRIVATE SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 
 set_target_properties(typing_trainer PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
