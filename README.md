@@ -8,7 +8,7 @@ Typing words displays receive accuracy(% of letters) and speed(words per minute)
 
 ## Configuration
 
-Configuration file is file is by default on "~/.config/type-trainer/config.txt".
+Configuration file is created to `~/.config/type-trainer/config.txt`.
 
 ## Config file syntax
 
