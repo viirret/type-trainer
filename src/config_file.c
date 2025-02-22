@@ -1,11 +1,11 @@
 #include "config_file.h"
 
+#include <sys/stat.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <errno.h>
-#include <libgen.h>
 
 // Helper function to create directories if they do not exist
 bool create_directory(const char* path) {

@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 // Initialize the GameMetrics structure with default values
 void GameMetrics_init(GameMetrics* metrics) {

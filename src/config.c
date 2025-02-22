@@ -2,6 +2,10 @@
 
 #include "config_file.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+
 static void modifyItemString(ConfigItem* item, const char* value) {
     item->value.str_value = malloc(strlen(value) + 1);
     if (item->value.str_value) {

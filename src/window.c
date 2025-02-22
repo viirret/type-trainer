@@ -3,11 +3,11 @@
 int Window_init(Window* window) {
     window->width = 1000;
     window->height = 1000;
-    window->window = SDL_CreateWindow("Typing Trainer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window->width, window->height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    window->window = SDL_CreateWindow("Typing Trainer",  window->width, window->height,  SDL_WINDOW_RESIZABLE);
 
     if (!window->window) return -1;
 
-    window->renderer = SDL_CreateRenderer(window->window, -1, SDL_RENDERER_ACCELERATED);
+    window->renderer = SDL_CreateRenderer(window->window, NULL);
     if (!window->renderer) {
         SDL_DestroyWindow(window->window);
         return -1;
@@ -22,7 +22,7 @@ void Window_destroy(Window* window) {
 }
 
 void Window_resize(Window* window, SDL_Event e) {
-    if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED) {
+    if (e.type == SDL_EVENT_WINDOW_RESIZED) {
         int w = e.window.data1;
         int h = e.window.data2;
 

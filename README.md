@@ -3,7 +3,7 @@
 Typing words displays receive accuracy(% of letters) and speed(words per minute).
 
 ## Dependencies
-```gcc make words gnu-free-fonts sdl2 sdl2_ttf```
+```gcc make words gnu-free-fonts sdl3 sdl3_ttf```
 
 
 ## Configuration

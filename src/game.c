@@ -2,6 +2,9 @@
 #include "config.h"
 #include "config_file.h"
 
+#include <stdlib.h>
+#include <ctype.h>
+
 void initTextures(Game* game) {
     if (!game->config.total_words.is_set) {
         perror("Cannot continue");
@@ -39,7 +42,7 @@ void Game_init(Game* game) {
     Word_init(&game->word, game->config.dictionary.value.str_value);
     game->font = TTF_OpenFont(game->config.font.value.str_value, game->config.font_size.value.int_value);
     if (!game->font) {
-        SDL_Log("Failed to load the font! SDL_ttf Error: %s\n", TTF_GetError());
+        SDL_Log("Failed to load the font! SDL_ttf Error: %s\n", SDL_GetError());
         return;
     }
     createConfigFiles();
@@ -197,17 +200,17 @@ void eventHandler(Game* game) {
     while (SDL_PollEvent(&e)) {
         Window_resize(&game->window, e);
 
-        if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && (e.key.keysym.sym == SDLK_ESCAPE))) {
+        if (e.type == SDL_EVENT_QUIT || (e.type == SDL_EVENT_KEY_DOWN && (e.key.key == SDLK_ESCAPE))) {
             game->close = true;
             Game_destroy(game);
             exit(0);
             return;
         }
 
-        else if (e.type == SDL_KEYDOWN) {
+        else if (e.type == SDL_EVENT_KEY_DOWN) {
             fflush(stdout);
 
-            int key = e.key.keysym.sym;
+            int key = e.key.key;
             if (key == SDLK_LSHIFT || key == SDLK_RSHIFT) {
                 game->shiftPressed = true;
                 continue;

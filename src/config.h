@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <SDL2/SDL_pixels.h>
+#include <SDL3/SDL_pixels.h>
 
 #include <stdbool.h>
 

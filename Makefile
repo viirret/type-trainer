@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude -g -lSDL2 -lSDL2_ttf
+CFLAGS = -Wall -Wextra -Iinclude -g
+LDFLAGS = -lSDL3 -lSDL3_ttf
 SRC_DIR = src
 BUILD_DIR = build
 
@@ -17,7 +18,7 @@ $(BUILD_DIR):
 
 # Rule to build the target
 $(TARGET): $(BUILD_DIR) $(OBJ_FILES)
-	$(CC) $(OBJ_FILES) -o $(TARGET) $(CFLAGS)
+	$(CC) $(OBJ_FILES) -o $(TARGET) $(LDFLAGS)
 
 # Rule for compiling .c files to .o files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)

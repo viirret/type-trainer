@@ -10,7 +10,7 @@
 #include <time.h>
 #include <stdint.h>
 
-#include <SDL2/SDL_ttf.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 typedef struct {
     Texture accuracyTexture;
