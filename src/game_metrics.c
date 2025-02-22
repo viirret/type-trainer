@@ -11,84 +11,68 @@ void GameMetrics_init(GameMetrics* metrics) {
     metrics->speed_count = 0;
 }
 
-// Load accuracy data from a file, storing values line-by-line into accuracy_data
+// Load data from a file into a dynamically allocated array.
+static int GameMetrics_loadData(const char* file_path, double** data, size_t* count) {
+    FILE* file = fopen(file_path, "r");
+    if (!file) {
+        perror("Failed to open file");
+        return -1;
+    }
+
+    double value;
+    size_t temp_count = 0;
+    double* temp_data = NULL;
+
+    while (fscanf(file, "%lf", &value) == 1) {
+        double* new_data = realloc(temp_data, sizeof(double) * (temp_count + 1));
+        if (!new_data) {
+            perror("Memory allocation failed");
+            free(temp_data);
+            fclose(file);
+            return -1;
+        }
+        temp_data = new_data;
+        temp_data[temp_count++] = value;
+    }
+
+    fclose(file);
+    *data = temp_data;
+    *count = temp_count;
+    return 0;
+}
+
+// Load accuracy data
 int GameMetrics_loadAccuracy(GameMetrics* metrics, const char* file_path) {
-    FILE* file = fopen(file_path, "r");
-    if (!file) {
-        perror("Failed to open accuracy file");
-        return -1;
-    }
-
-    double value;
-    size_t count = 0;
-
-    while (fscanf(file, "%lf", &value) == 1) {
-        metrics->accuracy_data = realloc(metrics->accuracy_data, sizeof(double) * (count + 1));
-        if (!metrics->accuracy_data) {
-            perror("Memory allocation failed");
-            fclose(file);
-            return -1;
-        }
-        metrics->accuracy_data[count++] = value;
-    }
-
-    metrics->accuracy_count = count;
-    fclose(file);
-    return 0;
+    return GameMetrics_loadData(file_path, &metrics->accuracy_data, &metrics->accuracy_count);
 }
 
-// Load speed data from a file, storing values line-by-line into speed_data
+// Load speed data
 int GameMetrics_loadSpeed(GameMetrics* metrics, const char* file_path) {
-    FILE* file = fopen(file_path, "r");
-    if (!file) {
-        perror("Failed to open speed file");
-        return -1;
-    }
-
-    double value;
-    size_t count = 0;
-
-    while (fscanf(file, "%lf", &value) == 1) {
-        metrics->speed_data = realloc(metrics->speed_data, sizeof(double) * (count + 1));
-        if (!metrics->speed_data) {
-            perror("Memory allocation failed");
-            fclose(file);
-            return -1;
-        }
-        metrics->speed_data[count++] = value;
-    }
-
-    metrics->speed_count = count;
-    fclose(file);
-    return 0;
+    return GameMetrics_loadData(file_path, &metrics->speed_data, &metrics->speed_count);
 }
 
-// Calculate average speed in WPM
+// Calculate the average of an array
+static double GameMetrics_getAverage(const double* data, size_t count) {
+    if (count == 0) {
+        return 0.0;
+    }
+
+    double total = 0.0;
+    for (size_t i = 0; i < count; i++) {
+        total += data[i];
+    }
+
+    return total / count;
+}
+
+// Get average speed
 double GameMetrics_getAverageSpeed(const GameMetrics* metrics) {
-    if (metrics->speed_count == 0) {
-        return 0.0;
-    }
-
-    double total_speed = 0.0;
-    for (size_t i = 0; i < metrics->speed_count; i++) {
-        total_speed += metrics->speed_data[i];
-    }
-
-    return total_speed / metrics->speed_count;
+    return GameMetrics_getAverage(metrics->speed_data, metrics->speed_count);
 }
 
-// Calculate average accuracy as a percentage
+// Get average accuracy
 double GameMetrics_getAverageAccuracy(const GameMetrics* metrics) {
-    if (metrics->accuracy_count == 0) {
-        return 0.0;
-    }
-
-    double total_accuracy = 0.0;
-    for (size_t i = 0; i < metrics->accuracy_count; i++) {
-        total_accuracy += metrics->accuracy_data[i];
-    }
-
-    return total_accuracy / metrics->accuracy_count;
+    return GameMetrics_getAverage(metrics->accuracy_data, metrics->accuracy_count);
 }
 
 // Free allocated memory used in GameMetrics
